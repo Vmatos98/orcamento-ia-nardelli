@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nardelli-orcamento-ia
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3213}:3005"
+    env_file:
+      - .env
+    environment:
+      - PORT=3005
+      - NODE_ENV=production
+    volumes:
+      # Persistência de orçamentos, clientes, configurações e uploads técnicos
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ==============================================================
+  # Opcional: Banco de Dados PostgreSQL Dedicado
+  # Descomente o bloco abaixo caso queira subir um PostgreSQL próprio
+  # ==============================================================
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: nardelli-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ${PG_DATABASE:-nardelli}
+  #     POSTGRES_USER: ${PG_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${PG_PASSWORD:-nardelli_pg_pass_2026}
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   pgdata:

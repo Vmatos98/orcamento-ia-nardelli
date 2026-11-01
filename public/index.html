@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orçamento — Nardelli Usinagem</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="no-print">
+  <div class="header-inner">
+    <div class="logo-block">
+      <img src="data:image/jpeg;base64,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" alt="Nardelli Usinagem">
+      <div class="logo-sub">
+        <p class="eyebrow">Orçamentos & Atendimento</p>
+        <p class="cidade" id="cidadeHeader">Aracaju/SE</p>
+      </div>
+    </div>
+    <nav>
+      <button class="navbtn active" data-tab="orcamento" onclick="showTab('orcamento')">Orçamento</button>
+      <button class="navbtn" data-tab="pedidos-abertos" onclick="showTab('pedidos-abertos')">
+        Pedidos em Aberto <span class="nav-badge" id="badgePedidosAbertos" style="display:none;">0</span>
+      </button>
+      <button class="navbtn" data-tab="salvos" onclick="showTab('salvos')">Histórico</button>
+      <button class="navbtn" data-tab="clientes" onclick="showTab('clientes')">Clientes</button>
+      <button class="navbtn" data-tab="chatbot" onclick="showTab('chatbot')">
+        Chatbot & Conversas <span class="nav-badge" id="badgeConversasPendente" style="display:none;">0</span>
+      </button>
+      <button class="navbtn" data-tab="insumos" onclick="showTab('insumos')">Insumos</button>
+      <button class="navbtn" data-tab="maquinas" onclick="showTab('maquinas')">Máquinas</button>
+      <button class="navbtn" data-tab="config" onclick="showTab('config')">Configurações</button>
+    </nav>
+    <div class="user-auth-bar" id="userAuthBar">
+      <button type="button" class="btn btn-ghost" id="btnAbrirLogin" style="padding:6px 12px; font-size:11px;" onclick="abrirModalAuth()">🔑 Entrar / Cadastrar</button>
+      <div id="userInfoHeader" style="display:none; align-items:center; gap:8px;">
+        <span class="user-badge" id="userHeaderNome">👤 Admin</span>
+        <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:10px;" onclick="logoutUsuario()">Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="toast" class="no-print"></div>
+<div id="erro" class="no-print"><span id="erro-texto"></span><button onclick="document.getElementById('erro').style.display='none'">✕</button></div>
+
+<main>
+
+  <!-- ===================== TAB 1: ORÇAMENTO (Fiel ao modelo.html) ===================== -->
+  <section id="tab-orcamento" class="tab-panel active">
+
+    <!-- Stepper de Navegação entre Etapas (Coleta Inicial -> Proposta com IA) -->
+    <div class="orcamento-stepper no-print">
+      <button type="button" class="stepper-step active" id="stepBtnColeta" onclick="mudarEtapaOrcamento('coleta')">
+        <span class="step-num">1</span>
+        <div class="step-text">
+          <b>1. Informações Iniciais do Serviço</b>
+          <small>Dados do cliente, peça, desenhos e observações</small>
+        </div>
+      </button>
+      <div class="stepper-connector"></div>
+      <button type="button" class="stepper-step" id="stepBtnRevisao" onclick="mudarEtapaOrcamento('revisao')">
+        <span class="step-num">2</span>
+        <div class="step-text">
+          <b>2. Proposta & Itens Calculados</b>
+          <small>Insumos, horas máquina, frete e BDI Nardelli</small>
+        </div>
+      </button>
+    </div>
+
+    <!-- Banner de Notificação de Vídeo / Contato Pendente -->
+    <div id="orcamentoVideoBox" class="orcamento-video-banner" style="display:none;"></div>
+
+    <!-- ==================== ETAPA 1: COLETA DE INFORMAÇÕES DO SERVIÇO ==================== -->
+    <div id="orcamento-etapa-coleta" class="orcamento-etapa-conteudo">
+      <!-- Card 1: Dados do Orçamento & Seleção/Cadastro de Cliente -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;"><span class="dot"></span>1. Identificação do orçamento & cliente</h2>
+          <span id="formStatusBadge" class="badge" style="font-size:11px; padding:4px 10px; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; font-weight:700;">🟡 EM ANDAMENTO</span>
+        </div>
+
+        <!-- Barra de Busca e Seleção de Cliente Cadastrado -->
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:#F8FAFC; border:1px solid var(--linha); border-radius:4px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:260px;">
+            <label style="font-size:11px; font-weight:700; color:var(--texto-suave); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">
+              👤 Selecionar Cliente Cadastrado
+            </label>
+            <select id="selectClienteCadastrado" onchange="aoSelecionarClienteCadastrado(this.value)" style="width:100%; font-weight:600; font-size:13px; color:var(--azul);">
+              <option value="">-- Novo Cliente / Preencher Manualmente --</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px; align-items:flex-end;">
+            <button type="button" class="btn btn-ghost" onclick="salvarClienteAtualDoFormulario()" style="padding:6px 12px; font-size:12px; font-weight:600;" title="Salva os dados preenchidos no cadastro permanente de clientes">
+              💾 Salvar Cliente no Cadastro
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="showTab('clientes')" style="padding:6px 12px; font-size:12px; font-weight:600;" title="Ver e gerenciar todos os clientes cadastrados">
+              👥 Gerenciar Clientes
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-4">
+          <label class="field"><span>Nº do orçamento</span><input id="numero" placeholder="0001"></label>
+          <label class="field"><span>Data</span><input id="data" type="date"></label>
+          <label class="field" style="grid-column:span 2;">
+            <span>Cliente / Empresa</span>
+            <input id="clienteNome" list="listaClientesCadastrados" placeholder="Nome do cliente ou empresa" oninput="aoDigitarNomeCliente(this.value)">
+            <datalist id="listaClientesCadastrados"></datalist>
+          </label>
+          <label class="field"><span>Telefone / WhatsApp</span><input id="clienteTel" placeholder="(79) 90000-0000"></label>
+          <label class="field">
+            <span>CEP</span>
+            <div style="position:relative; display:flex; align-items:center;">
+              <input id="clienteCep" placeholder="49000-000" maxlength="9" oninput="formatarEConsultarCEP(this.value)" onblur="consultarCEP(this.value)" style="padding-right:26px;">
+              <span id="cepSpinner" style="position:absolute; right:8px; display:none; font-size:12px;">⏳</span>
+            </div>
+          </label>
+          <label class="field" style="grid-column:span 2;">
+            <span>Endereço</span>
+            <input id="clienteEndereco" placeholder="Logradouro, número, bairro, cidade - UF" oninput="aoDigitarEndereco(this.value)">
+          </label>
+        </div>
+
+        <!-- Seletor de Frete / Transporte no formulário -->
+        <div class="grid grid-4" style="margin-top:12px; align-items:center;">
+          <label class="field" style="grid-column:span 2;">
+            <span>Opção de Frete / Transporte</span>
+            <select id="opcaoFrete" onchange="aoMudarOpcaoFrete(this.value)">
+              <option value="sem_frete">Sem Frete (Cliente retira na oficina em Aracaju/SE)</option>
+              <option value="com_frete">Com Frete (Entrega no endereço do cliente)</option>
+            </select>
+          </label>
+          <div id="blocoInfoFreteColeta" style="display:none; grid-column:span 2; padding:8px 12px; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:4px; font-size:12px; color:#1E40AF;">
+            🚚 <b>Frete habilitado:</b> Distância calculada: <b id="distKmBadgeColeta">0 km</b> (<span id="destinoBadgeColeta">Aracaju/SE</span>). Total frete: <b id="valorFreteBadgeColeta">R$ 0,00</b>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:8px;">
+          <label style="font-size:11px; color:var(--texto-suave); display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="checkSalvarCliente" checked style="accent-color:var(--azul);">
+            Salvar/atualizar este cliente no cadastro automaticamente ao salvar o orçamento
+          </label>
+          <span id="clienteFeedbackBadge" style="display:none; font-size:11px; font-weight:700; color:var(--verde);">✓ Cliente carregado do cadastro</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Informações Técnicas da Peça / Serviço & Especificações (Redesenhado) -->
+      <div class="card especificacao-card-moderno">
+        <h2>
+          <span style="display:flex; align-items:center; gap:8px;">
+            <span class="dot"></span>2. Informações da Peça / Serviço & Desenhos Técnicos
+          </span>
+          <span class="badge-ia-accent">⚡ Triagem com IA Integrada</span>
+        </h2>
+        
+        <div class="especificacao-layout">
+          <!-- Coluna 1: Descrição & Parâmetros Mecânicos -->
+          <div class="col-dados-peca">
+            <div class="campo-descricao-wrapper">
+              <div class="campo-descricao-header">
+                <span>📝 Descrição do Serviço ou Peça Industrial</span>
+                <span id="descricaoDicaTamanho" style="font-size:10px; color:var(--texto-suave);">💡 Dica: inclua dimensões (Ø diâmetro x comprimento)</span>
+              </div>
+              <textarea id="descricaoServico" class="textarea-moderno" rows="4" placeholder="Ex: Fabricação de polia guia lisa Ø160x100mm com furo para rolamento 6207; ou recuperação de eixo motriz Ø75x650mm em aço 1045 com enchimento de solda..."></textarea>
+              
+              <!-- Chips de Sugestão Rápida de Peças -->
+              <div class="sugestoes-pecas-wrap">
+                <div class="sugestoes-pecas-label">
+                  <span>⚡ Modelos rápidos para inspirar ou preencher (1 clique):</span>
+                </div>
+                <div class="sugestoes-pecas-chips">
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('eixo')" title="Preenche modelo de eixo escalonado com chaveta">
+                    ⚙️ Eixo Escalonado c/ Chaveta
+                  </button>
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('polia')" title="Preenche modelo de polia usinada com cubo">
+                    🔘 Polia c/ Alojamento
+                  </button>
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('bucha')" title="Preenche modelo de bucha de bronze autolubrificante">
+                    🟡 Bucha Bronze TM-23
+                  </button>
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('engrenagem')" title="Preenche modelo de engrenagem dente reto">
+                    ⚙️ Engrenagem Dente Reto
+                  </button>
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('flange')" title="Preenche modelo de flange de acoplamento furada">
+                    🔩 Flange de Acoplamento
+                  </button>
+                  <button type="button" class="chip-sugestao" onclick="aplicarSugestaoPeca('recuperacao')" title="Preenche modelo de recuperação de eixo por solda e usinagem">
+                    🛠️ Recuperação / Solda
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grade de Especificações da Peça -->
+            <div class="grade-parametros-peca">
+              <label class="field">
+                <span>Categoria da Peça</span>
+                <select id="categoriaPeca">
+                  <option value="Usinagem Geral">Usinagem Geral</option>
+                  <option value="Eixo">Eixo</option>
+                  <option value="Polia">Polia</option>
+                  <option value="Engrenagem">Engrenagem</option>
+                  <option value="Acoplamento">Acoplamento</option>
+                  <option value="Redutor">Redutor</option>
+                  <option value="Cilindro / Rolo">Cilindro / Rolo</option>
+                  <option value="Manutenção">Manutenção / Recuperação</option>
+                  <option value="Caldeiraria e Solda">Caldeiraria & Solda</option>
+                  <option value="Tratamento Térmico">Tratamento Térmico</option>
+                  <option value="Outros">Outros Itens</option>
+                </select>
+              </label>
+
+              <div style="display:flex; gap:8px;">
+                <label class="field" style="flex:1;">
+                  <span>Qtd. Peças</span>
+                  <input id="quantidadePecas" type="number" min="1" step="1" value="1" placeholder="Ex: 1" oninput="if(document.getElementById('fretePecas')) document.getElementById('fretePecas').value = this.value; calcularTotais();">
+                </label>
+                <label class="field" style="width:105px;">
+                  <span>Unid. Peça</span>
+                  <select id="unidadePeca" onchange="calcularTotais()">
+                    <option value="PÇ" selected>PÇ (Peça)</option>
+                    <option value="UN">UN (Unid.)</option>
+                    <option value="CJ">CJ (Conj.)</option>
+                    <option value="KG">KG (Quilo)</option>
+                    <option value="M">M (Metro)</option>
+                    <option value="JG">JG (Jogo)</option>
+                    <option value="LOTE">LOTE</option>
+                    <option value="H">H (Hora)</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Prazo Desejado pelo Cliente</span>
+                <input id="prazoDesejado" placeholder="Ex: 5 dias úteis, Urgente, 15 dias...">
+              </label>
+
+              <label class="field">
+                <span>Material / Matéria-Prima</span>
+                <select id="materialPeca">
+                  <option value="" selected>✨ Deixar a IA definir a melhor opção para a peça</option>
+                  <optgroup label="Aços Carbono (Construção Mecânica)">
+                    <option value="Aço Carbono (1020/1045)">Aço Carbono (1020/1045)</option>
+                    <option value="Aço Carbono 1045 (Beneficiável)">Aço Carbono 1045 (Beneficiável)</option>
+                    <option value="Aço Carbono 1020 (Soldável/Estrutural)">Aço Carbono 1020 (Soldável/Estrutural)</option>
+                  </optgroup>
+                  <optgroup label="Aços Liga (Alta Resistência / Beneficiados)">
+                    <option value="Aço Liga (4140/4340)">Aço Liga (4140/4340)</option>
+                    <option value="Aço Liga 4140 Beneficiado">Aço Liga 4140 Beneficiado</option>
+                    <option value="Aço Liga 4340">Aço Liga 4340</option>
+                    <option value="Aço Liga 8620 (Para Cementação)">Aço Liga 8620 (Para Cementação)</option>
+                  </optgroup>
+                  <optgroup label="Aços Inoxidáveis (Resistência à Corrosão)">
+                    <option value="Aço Inox (304/316)">Aço Inox (304/316)</option>
+                    <option value="Aço Inox AISI 304">Aço Inox AISI 304</option>
+                    <option value="Aço Inox AISI 316 / 316L">Aço Inox AISI 316 / 316L</option>
+                    <option value="Aço Inox AISI 420 (Temperável)">Aço Inox AISI 420 (Temperável)</option>
+                  </optgroup>
+                  <optgroup label="Aços Ferramenta (Corte / Matrizes / Alta Dureza)">
+                    <option value="Aço Ferramenta (D2/VND/H13)">Aço Ferramenta (D2/VND/H13)</option>
+                    <option value="Aço VC131 / D2 (Alta Dureza)">Aço VC131 / D2 (Alta Dureza)</option>
+                  </optgroup>
+                  <optgroup label="Metais Não-Ferrosos & Fundidos">
+                    <option value="Ferro Fundido (Nodular/Cinzento)">Ferro Fundido (Nodular/Cinzento)</option>
+                    <option value="Bronze (TM-23/SAE 660)">Bronze (TM-23/SAE 660)</option>
+                    <option value="Latão Industrial (CLA)">Latão Industrial (CLA)</option>
+                    <option value="Alumínio (6061/Naval)">Alumínio (6061/Naval)</option>
+                  </optgroup>
+                  <optgroup label="Polímeros de Engenharia">
+                    <option value="Nylon / Poliacetal (POM) / Polímeros">Nylon / Poliacetal (POM) / Polímeros</option>
+                  </optgroup>
+                  <optgroup label="Outro / Fornecido pelo Cliente">
+                    <option value="Material Fornecido pelo Cliente">Material Fornecido pelo Cliente</option>
+                    <option value="A Definir / Sob Consulta">A Definir / Sob Consulta</option>
+                  </optgroup>
+                </select>
+              </label>
+            </div>
+
+            <!-- Bloco Especial: Tratamento Térmico & Dureza Retrátil -->
+            <div id="painelTermicoCard" class="painel-termico-card">
+              <div class="painel-termico-header" onclick="togglePainelTermico()">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:14px;">🔥</span>
+                  <b style="font-size:12px; color:var(--azul);">Tratamento Térmico & Dureza (Fornos Mufla Nardelli)</b>
+                  <span id="badgeTermicoStatus" class="badge" style="font-size:9px; background:#E2E8F0; color:#475569;">Opcional</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span id="iconeSetaTermico" style="font-size:12px; color:var(--texto-suave); transition:transform 0.2s;">▼</span>
+                </div>
+              </div>
+              <div class="painel-termico-corpo">
+                <div class="grid grid-3">
+                  <label class="field">
+                    <span>Processo Térmico</span>
+                    <select id="tratamentoTermico" onchange="aoAlterarTratamentoTermico(this.value)">
+                      <option value="Nenhum">Nenhum / Não Requer</option>
+                      <option value="Têmpera">Têmpera (até 1050°C)</option>
+                      <option value="Cementação">Cementação (Camada endurecida)</option>
+                      <option value="Revenimento">Revenimento (Alívio de tensões)</option>
+                      <option value="Alívio de Tensões">Alívio de Tensões Pós-Solda</option>
+                      <option value="Normalização">Normalização</option>
+                      <option value="Nitretação">Nitretação</option>
+                      <option value="Têmpera por Indução">Têmpera por Indução</option>
+                      <option value="Sob Avaliação Técnica">Sob Avaliação Técnica Nardelli</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Dureza Desejada / Requerida</span>
+                    <input id="durezaDesejada" placeholder="Ex: 55-60 HRC, 45 HRC, 300 HB...">
+                  </label>
+
+                  <label class="field">
+                    <span>Profundidade / Detalhes</span>
+                    <input id="detalhesTermico" placeholder="Ex: Camada 1.0mm, têmpera na pista...">
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observações Adicionais -->
+            <div>
+              <label class="field">
+                <span>Observações técnicas adicionais (tolerâncias h6/H7, acabamento, canal de lubrificação)</span>
+                <textarea id="obsIA" rows="2" placeholder="Ex: tolerância h6 no colo de rolamento, acabamento retificado, canal de graxa..."></textarea>
+              </label>
+            </div>
+          </div>
+
+          <!-- Coluna 2: Central de Arquivos, Desenhos & Croquis -->
+          <div class="col-arquivos-peca">
+            <div class="central-arquivos-header">
+              <div>
+                <span class="central-arquivos-titulo">📎 Desenhos, Croquis & Fotos</span>
+                <div class="central-arquivos-sub">Anexe fotos da bancada, croquis manuais ou PDF de projeto</div>
+              </div>
+              <span id="badgeContadorArquivos" class="badge" style="font-size:10px; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE;">0 arquivos</span>
+            </div>
+
+            <!-- Dropzone com Drag & Drop e Clique -->
+            <div id="dropzoneArea" class="dropzone-area" onclick="document.getElementById('arquivoIA').click()">
+              <input type="file" id="arquivoIA" accept="image/*,.pdf,.dwg,.dxf" multiple style="display:none;" onchange="onEscolherArquivos(event)">
+              <div class="dropzone-icone">📁</div>
+              <div class="dropzone-texto-principal">Arraste fotos ou desenhos aqui</div>
+              <div class="dropzone-texto-sub">ou clique para escolher do seu computador</div>
+              <button type="button" class="dropzone-btn-navegar" onclick="event.stopPropagation(); document.getElementById('arquivoIA').click()">
+                📂 Selecionar Arquivos
+              </button>
+              <div>
+                <span class="dropzone-atalho-paste">💡 Suporta colar prints com <b>Ctrl + V</b></span>
+              </div>
+            </div>
+
+            <!-- Galeria e Miniaturas de Arquivos Selecionados -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+              <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--texto-suave);">Arquivos para Análise da IA:</span>
+              <button type="button" id="btnLimparArquivos" class="btn-ghost" style="padding:2px 8px; font-size:10px; border-radius:3px; display:none;" onclick="limparTodosArquivosPendentes()">Limpar todos</button>
+            </div>
+
+            <div id="arquivosPreview" class="arquivos-preview-container">
+              <!-- Renderizado dinamicamente via JS com miniaturas ricas -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de Ação Principal: Analisar com IA ou Avançar Manualmente -->
+      <div class="card painel-acao-etapa1 no-print">
+        <div style="text-align:center; padding:18px 20px;">
+          <h3 style="margin:0 0 6px; font-size:17px; color:var(--azul);">Pronto para calcular os insumos e operações?</h3>
+          <p style="margin:0 0 16px; color:var(--texto-suave); font-size:12px; max-width:620px; margin-left:auto; margin-right:auto;">
+            A inteligência artificial fará a triagem técnica instantânea, decidirá o modelo ideal para a peça, selecionará as máquinas do parque fabril e calculará a proposta para sua revisão.
+          </p>
+
+          <div style="display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-analisar-destaque" id="btnAnalisar" onclick="rodarAnaliseIA()">
+              <span style="font-size:16px;">✨</span> <b>Analisar e Gerar Orçamento</b>
+            </button>
+            <button type="button" class="btn btn-ghost" style="padding:10px 18px; font-weight:600; color:var(--azul-med);" onclick="mudarEtapaOrcamento('revisao')" title="Ir direto para as tabelas para preencher manualmente">
+              ✏️ Preencher proposta manualmente (sem IA) ➔
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ETAPA 2: PROPOSTA & ITENS CALCULADOS ==================== -->
+    <div id="orcamento-etapa-revisao" class="orcamento-etapa-conteudo" style="display:none;">
+
+      <!-- Barra Superior de Navegação & Resumo da Proposta -->
+      <div class="card no-print" style="margin-bottom:14px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#F8FAFC; border-left:4px solid var(--laranja);">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:12px; font-weight:700; color:var(--azul); border-color:var(--azul);" onclick="mudarEtapaOrcamento('coleta')">
+            ← Voltar às Informações Iniciais
+          </button>
+          <div style="font-size:12px;">
+            <span style="color:var(--texto-suave);">Proposta:</span> <b id="resumoTopoOrcamento">#0001</b> — <span id="resumoTopoCliente" style="font-weight:600;">(Cliente)</span>
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="mudarEtapaOrcamento('coleta')" title="Editar dados do cliente, descrição ou anexar fotos">
+            📎 Ver Arquivos / Editar Descrição
+          </button>
+          <button type="button" class="btn btn-ghost" style="padding:6px 14px; font-size:11px; font-weight:700; color:var(--azul); border-color:var(--azul);" onclick="abrirPreviewPropostaPDF()" title="Pré-visualizar e Imprimir Proposta Formal Direta ao Ponto em PDF">
+            🖨️ Proposta em PDF
+          </button>
+          <button type="button" class="btn btn-primary" style="padding:6px 14px; font-size:11px;" onclick="rodarAnaliseIA()" title="Recalcular itens usando a IA">
+            🔄 Reanalisar com IA
+          </button>
+        </div>
+      </div>
+
+      <!-- Painel de Status Comercial & Negociação com o Cliente -->
+      <div id="painelStatusCliente" class="card no-print" style="margin-bottom:14px; padding:12px 16px; display:none; background:#FFFFFF; border:1px solid var(--linha); border-radius:4px; border-left:4px solid #2563EB;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;" id="statusClienteIcone">📤</span>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="statusClienteBadge" class="badge" style="font-weight:700; font-size:11px; padding:3px 8px; background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE;">ENVIADO AO CLIENTE</span>
+                <span id="statusClienteData" style="font-size:11px; color:var(--texto-suave);"></span>
+              </div>
+              <div id="statusClienteDetalhes" style="font-size:12px; color:var(--texto); margin-top:3px; font-weight:500;">
+                Proposta enviada ao cliente. Registre abaixo quando houver retorno.
+              </div>
+            </div>
+          </div>
+          
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;" id="acoesStatusCliente">
+            <button type="button" class="btn" style="background:#16A34A; color:#fff; border-color:#15803D; font-size:11px; padding:6px 14px; font-weight:700;" onclick="abrirModalFeedback('aprovar')">
+              ✅ Cliente Aprovou
+            </button>
+            <button type="button" class="btn btn-ghost" style="color:#D97706; border-color:#D97706; font-size:11px; padding:6px 12px; font-weight:700;" onclick="abrirModalFeedback('ajuste')">
+              🔄 Cliente Pediu Ajuste
+            </button>
+            <button type="button" class="btn btn-ghost" style="color:#DC2626; border-color:#DC2626; font-size:11px; padding:6px 12px; font-weight:700;" onclick="abrirModalFeedback('recusar')">
+              ❌ Cliente Recusou
+            </button>
+            <button type="button" class="btn btn-ghost" style="font-size:11px; padding:6px 10px;" onclick="abrirModalHistoricoCliente()">
+              📜 Histórico (<span id="contagemEventosHistorico">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner de Auditoria de IA quando gerado -->
+      <div id="iaAuditBox" class="ia-badge-box" style="display:none; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">⚡</span>
+          <div>
+            <b>Análise de IA Aplicada:</b>
+            <span id="iaAuditComplexidade" class="badge badge-manual" style="margin-left:4px;">MÉDIA COMPLEXIDADE</span>
+            <span style="color:var(--texto-suave); margin-left:8px;" id="iaAuditModelo">Claude 3.5 Sonnet</span>
+          </div>
+        </div>
+        <div style="color:var(--verde); font-weight:700; font-size:11px;">
+          ✓ Poda de catálogo aplicada (~70% economia de tokens)
+        </div>
+      </div>
+
+      <!-- Banner de Aprendizado Ativo (JEV) quando houver caso similar calibrado -->
+      <div id="iaReferenciaBox" class="card" style="display:none; margin-bottom:14px; padding:12px 16px; background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #10B981; border-radius:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span class="badge" style="background:#DCFCE7; color:#065F46; border:1px solid #6EE7B7; font-weight:700; font-size:11px;">
+                🎯 APRENDIZADO ATIVO (JEV)
+              </span>
+              <span id="iaRefTitulo" style="font-size:13px; font-weight:700; color:#065F46;"></span>
+            </div>
+            <div id="iaRefMotivo" style="font-size:12px; color:#1E293B; line-height:1.45;"></div>
+            <div id="iaRefAjustesEvitados" style="font-size:11px; color:#047857; margin-top:4px; font-weight:600;"></div>
+          </div>
+          <div style="font-size:11px; color:#065F46; background:#D1FAE5; padding:4px 9px; border-radius:4px; border:1px solid #A7F3D0; font-weight:700;">
+            ⚡ Consulta rápida via JEV System One
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Informativo da Matéria-Prima Selecionada/Sugerida pela IA -->
+      <div id="iaMaterialBanner" class="card" style="display:none; margin-bottom:14px; padding:12px 16px; background:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #16A34A; border-radius:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span id="iaMaterialBadge" class="badge" style="background:#DCFCE7; color:#15803D; border:1px solid #86EFAC; font-weight:700; font-size:11px;">
+                ✨ MATÉRIA-PRIMA DEFINIDA PELA IA
+              </span>
+              <span id="iaMaterialNome" style="font-size:13px; font-weight:700; color:var(--azul);"></span>
+            </div>
+            <div id="iaMaterialJustificativa" style="font-size:12px; color:var(--texto-suave); line-height:1.45;">
+            </div>
+          </div>
+          <div id="iaMaterialAvisoNaoListado" style="display:none; font-size:11px; color:#B45309; background:#FEF3C7; padding:4px 9px; border-radius:4px; border:1px solid #FCD34D; font-weight:700;">
+            ⭐ Sugestão ideal não listada no catálogo de insumos
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Insumos do Orçamento -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;"><span class="dot"></span>Insumos do orçamento (Matérias-Primas e Consumíveis)</h2>
+          <span style="font-size:11px; color:var(--texto-suave);">Valores unitários e unidades de medida industriais (KG, PÇ, M, MIN...)</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th style="width:34%;">Material / Insumo (catálogo ou livre)</th>
+              <th style="width:12%;">Qtd.</th>
+              <th style="width:14%;">Unid. Medida</th>
+              <th style="width:16%;" class="num">Preço Unit. (R$)</th>
+              <th style="width:18%;" class="num">Subtotal</th>
+              <th style="width:6%;"></th>
+            </tr></thead>
+            <tbody id="insumos-body"></tbody>
+          </table>
+          <datalist id="lista-insumos"></datalist>
+          <datalist id="lista-unidades-insumos">
+            <option value="KG">KG - Quilograma</option>
+            <option value="PÇ">PÇ - Peça</option>
+            <option value="UN">UN - Unidade</option>
+            <option value="M">M - Metro linear</option>
+            <option value="MM">MM - Milímetro</option>
+            <option value="BARRA">BARRA - Barra inteira</option>
+            <option value="CHAPA">CHAPA - Chapa</option>
+            <option value="L">L - Litro</option>
+            <option value="ML">ML - Mililitro</option>
+            <option value="MIN">MIN - Minuto de máquina/processo</option>
+            <option value="H">H - Hora</option>
+            <option value="CJ">CJ - Conjunto</option>
+            <option value="JG">JG - Jogo</option>
+            <option value="LOTE">LOTE - Lote</option>
+            <option value="MM²">MM² - Milímetro quadrado</option>
+          </datalist>
+        </div>
+        <button type="button" class="btn btn-add" style="margin-top:12px;" onclick="addInsumoRow()">+ Adicionar insumo</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:13px; flex-wrap:wrap; gap:8px;">
+          <span style="color:var(--azul); font-size:12px; font-weight:600; background:#EFF6FF; padding:4px 10px; border-radius:4px; border:1px solid #BFDBFE;">
+            📦 Custo de material por peça: <b id="custoMaterialUnitarioTxt">R$ 0,00 / PÇ</b>
+          </span>
+          <div>Total de insumos (custo direto): <b id="totalInsumos">R$ 0,00</b></div>
+        </div>
+
+        <!-- Card de Confirmação para Atualizar Preço no Catálogo -->
+        <div id="cardSincronizarPrecoCatalogo" style="display:none; margin-top:14px; padding:12px 16px; background:#FEF3C7; border:1px solid #FCD34D; border-left:4px solid #D97706; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:flex-start; gap:10px; max-width:85%;">
+              <span style="font-size:20px;">💡</span>
+              <div>
+                <b style="font-size:12px; color:#92400E; display:block; margin-bottom:2px;">Preço modificado: Deseja atualizar no Catálogo Geral?</b>
+                <div id="msgSyncPrecoCatalogo" style="font-size:12px; color:#78350F; line-height:1.4;"></div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="btn btn-primary" onclick="confirmarSincronizacaoCatalogo()" style="font-size:11px; padding:6px 14px; font-weight:700; background:#D97706; border-color:#B45309;">
+                ✓ Sim, Atualizar no Catálogo
+              </button>
+              <button type="button" class="btn btn-ghost" onclick="fecharCardSyncPrecoCatalogo()" style="font-size:11px; padding:6px 10px; color:#78350F; border-color:#D1D5DB;">
+                ✕ Manter só neste orçamento
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Operações / Horas Máquina -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin-bottom:0;"><span class="dot"></span>Operações / horas de máquina</h2>
+          <span id="badgeIndicadorMultiPecas" style="display:none; background:#EFF6FF; color:var(--azul); font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; border:1px solid #BFDBFE;">
+            🧩 Conjunto: Múltiplas Peças Fabricadas Juntas
+          </span>
+        </div>
+
+        <!-- Painel de Roteiro de Produção por Peça (Múltiplas Peças / Conjuntos) -->
+        <div id="painelRoteiroMultiPecas" style="display:none; margin-bottom:16px; background:#F8FAFC; border:1px solid #BFDBFE; border-left:4px solid var(--azul); border-radius:8px; padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">🧩</span>
+              <div>
+                <b style="color:var(--azul); font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Roteiro de Produção Sequencial por Peça</b>
+                <div style="font-size:11px; color:var(--texto-suave);">Peças fabricadas juntas com fluxo e etapas de usinagem ordenadas cronologicamente para cada componente.</div>
+              </div>
+            </div>
+            <span id="badgeQtdPecasConjunto" style="background:var(--azul); color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">
+              Múltiplos Componentes
+            </span>
+          </div>
+          <div id="listaRoteiroPecas" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th style="width:28%;">Componente / Máquina</th>
+              <th style="width:24%;">Passo a passo sequencial</th>
+              <th style="width:11%;">Regime</th>
+              <th style="width:9%;">Horas</th>
+              <th style="width:12%;" class="num">Valor h. normal</th>
+              <th style="width:12%;" class="num">Subtotal</th>
+              <th style="width:4%;"></th>
+            </tr></thead>
+            <tbody id="maquinas-body"></tbody>
+          </table>
+          <datalist id="lista-maquinas"></datalist>
+        </div>
+        <button type="button" class="btn btn-add" style="margin-top:12px;" onclick="addMaquinaRow()">+ Adicionar operação</button>
+        <div class="grid" style="max-width:280px; margin-left:auto; margin-top:16px;">
+          <label class="field"><span>Mão de obra escritório (R$)</span><input id="moEscritorio" type="number" step="0.01" value="0" oninput="calcularTotais()"></label>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:13px; flex-wrap:wrap; gap:8px;">
+          <span style="color:var(--azul); font-size:12px; font-weight:600; background:#EFF6FF; padding:4px 10px; border-radius:4px; border:1px solid #BFDBFE;">
+            ⚙️ Custo de M.O. por peça: <b id="custoMOUnitarioTxt">R$ 0,00 / PÇ</b>
+          </span>
+          <div>Total horas + M.O. (custo direto): <b id="totalMO">R$ 0,00</b></div>
+        </div>
+      </div>
+
+      <!-- Card Interativo: Refinar / Pedir Ajustes e Recalcular com IA -->
+      <div class="card" id="cardAjustesIA" style="background:#FFFFFF; border:1px solid #BFDBFE; border-left:4px solid #2563EB; margin-bottom:14px; padding:16px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:20px;">💬</span>
+            <h2 style="margin:0; font-size:14px; color:var(--azul);"><span class="dot"></span>Pedir Ajuste ou Recálculo à IA</h2>
+          </div>
+          <span style="font-size:11px; color:#2563EB; background:#EFF6FF; padding:3px 8px; border-radius:12px; border:1px solid #DBEAFE; font-weight:600;">
+            🤖 Assistente Interativo de Engenharia
+          </span>
+        </div>
+
+        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px; line-height:1.45;">
+          Converse com o modelo para afinar a proposta. Peça para trocar matérias-primas (ex: <i>"mudar para barra chata 32x12mm"</i>), recalibrar horas de máquina, alterar tolerâncias ou adicionar etapas de produção:
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <textarea id="inputAjusteIA" rows="2" style="width:100%; border:1px solid #CBD5E1; border-radius:4px; padding:10px 12px; font-size:13px; font-family:inherit; resize:vertical; outline:none;" placeholder="Ex: Mudar o tarugo do martelinho para barra chata 32x12mm, reduzir torneamento para 1.5h e adicionar tratamento térmico..."></textarea>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <span style="font-size:11px; color:var(--texto-suave);">
+              💡 A IA reanalisa a proposta técnica mantendo o catálogo da oficina e recalcula todos os custos.
+            </span>
+            <button type="button" id="btnRecalcularIA" class="btn btn-primary" onclick="executarAjusteRecalculoIA()" style="padding:8px 18px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:8px;">
+              <span>⚡</span> <b>Recalcular com IA</b>
+            </button>
+          </div>
+        </div>
+
+        <!-- Indicativo Visual de Recálculo em Andamento -->
+        <div id="indicativoRecalculoIA" style="display:none; margin-top:12px; padding:12px 14px; background:#EFF6FF; border:1px solid #93C5FD; border-radius:4px; color:#1E40AF; font-size:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="anim-pulse" style="font-size:22px; display:inline-block;">⚡</div>
+            <div>
+              <b style="color:#1D4ED8; font-size:13px;">IA recalculando a proposta técnica...</b>
+              <div style="font-size:11px; color:#3B82F6; margin-top:2px;">Reanalisando tempos de máquina, matérias-primas e recalibrando os totais conforme sua solicitação. Aguarde alguns segundos.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Frete & Parcelamento -->
+      <div class="grid grid-2">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+            <h2><span class="dot"></span>Frete de Transporte</h2>
+            <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer;">
+              <input type="checkbox" id="checkFreteAtivo" onchange="toggleCheckFrete(this.checked)" style="accent-color:var(--azul);">
+              Incluir frete no orçamento
+            </label>
+          </div>
+
+          <div id="painelFreteDetalhes" style="display:none;">
+            <div class="grid grid-3">
+              <label class="field">
+                <span>Distância só ida (km)</span>
+                <input id="freteDistKm" type="number" min="0" step="1" value="0" oninput="calcularTotais()">
+              </label>
+              <label class="field"><span>Nº viagens</span><input id="freteViagens" type="number" min="1" step="1" value="1" oninput="calcularTotais()"></label>
+              <label class="field"><span>Nº peças</span><input id="fretePecas" type="number" min="1" step="1" value="1" oninput="calcularTotais()"></label>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+              <span style="font-size:12px; color:var(--texto-suave);">
+                Ida e volta (2x) · R$ <span id="custoKmTxt">1,22</span>/km · total: <b id="freteTotalTxt">R$ 0,00</b>
+              </span>
+              <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:11px;" onclick="recalcularDistanciaPeloEndereco()" title="Recalcular distância pelo CEP e Endereço">
+                📍 Recalcular pelo endereço
+              </button>
+            </div>
+            <div id="freteAvisoDestino" style="font-size:11px; color:#1D4ED8; margin-top:6px; font-weight:500;"></div>
+          </div>
+
+          <div id="painelFreteDesativado" style="padding:12px 14px; background:#F8FAFC; border:1px dashed var(--linha); border-radius:4px; font-size:12px; color:var(--texto-suave);">
+            📦 <b>Sem frete incluso:</b> Peça será retirada pelo cliente na oficina da Nardelli Usinagem (Aracaju/SE). Marque a opção acima para incluir frete de entrega.
+          </div>
+        </div>
+        <div class="card">
+          <h2><span class="dot"></span>Parcelamento (opcional)</h2>
+          <label class="field"><span>Prazo de pagamento (meses)</span><input id="prazoMeses" type="number" step="0.5" value="0" oninput="calcularTotais()"></label>
+          <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">Juros médio mensal definido em Configurações.</p>
+        </div>
+      </div>
+
+      <!-- Fechamento Comercial / Resultado Azul -->
+      <div class="resultado">
+        <div class="linhas">
+          <div class="linha"><span>Insumos c/ margem de contribuição (BDI)</span><span id="valorInsumoMargem">R$ 0,00</span></div>
+          <div class="linha"><span>Mão de obra c/ margem de contribuição (BDI)</span><span id="valorMOMargem">R$ 0,00</span></div>
+          <div class="linha"><span>Frete</span><span id="freteTotalTxt2">R$ 0,00</span></div>
+          <div class="linha total-sub"><span>Total sem margem de desconto</span><span id="semDesconto">R$ 0,00</span></div>
+          <div class="linha"><span id="labelDesconto">Com margem de desconto</span><span id="comDesconto">R$ 0,00</span></div>
+          <div class="linha" id="linhaPrazo" style="display:none;"><span>Preço a prazo (com juros)</span><span id="precoAPrazo">R$ 0,00</span></div>
+          
+          <!-- Bloco Destacado: Valor Unitário da Peça -->
+          <div class="linha" style="background:rgba(255,255,255,0.15); padding:10px 14px; border-radius:6px; margin:10px 0 6px; border:1px solid rgba(255,255,255,0.3); align-items:center;">
+            <div>
+              <div style="font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                <span>💵 VALOR UNITÁRIO POR <span id="labelUnidadePecaFechamento">PEÇA (PÇ)</span></span>
+              </div>
+              <div style="font-size:11px; opacity:0.9; margin-top:2px;">
+                Preço por unidade (<span id="txtResumoQtdUnid">1 PÇ</span>) · Base à vista c/ desconto
+              </div>
+            </div>
+            <span id="valorUnitarioPecaTxt" style="font-size:20px; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.3);">R$ 0,00 / PÇ</span>
+          </div>
+          <div class="linha" id="linhaValorUnitarioPrazo" style="display:none; font-size:12px; opacity:0.92; padding:0 4px;">
+            <span>Valor unitário a prazo faturado:</span>
+            <b id="valorUnitarioPrazoTxt">R$ 0,00 / PÇ</b>
+          </div>
+        </div>
+        <div class="stamp-wrap">
+          <div class="stamp">
+            <span class="lbl">Total do orçamento (<span id="txtQtdTotalFinal">1 PÇ</span>)</span>
+            <span class="val" id="totalFinalStamp">R$ 0,00</span>
+          </div>
+        </div>
+        <div class="no-print" style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:20px;">
+          <button type="button" class="btn btn-primary" onclick="salvarOrcamentoAtual(false)">💾 Salvar Rascunho (Em Elaboração)</button>
+          <button type="button" class="btn" style="background:#16A34A; color:#fff; border-color:#15803D; font-weight:700; padding:10px 20px; font-size:13px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 3px 10px rgba(22, 163, 74, 0.4);" onclick="abrirModalEnviarProposta()">
+            📤 Enviar Proposta ao Cliente
+          </button>
+          <button type="button" class="btn btn-ghost" style="color:#fff; border-color:#fff; font-weight:700;" onclick="abrirPreviewPropostaPDF()">🖨️ Imprimir / Salvar PDF</button>
+          <button type="button" class="btn btn-ghost" style="color:#fff; border-color:rgba(255,255,255,0.4);" onclick="novoOrcamentoEmBranco()">Novo orçamento em branco</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TAB: PEDIDOS EM ABERTO (Funil Comercial) ===================== -->
+  <section id="tab-pedidos-abertos" class="tab-panel">
+    <!-- Cards de Resumo da Fila -->
+    <div class="grid grid-4" style="gap:12px; margin-bottom:16px;">
+      <div style="background:#FFF1F2; border:1px solid #FECDD3; border-left:4px solid #E11D48; border-radius:4px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#9F1239;">📥 Novos Pedidos</span>
+          <div id="kpiNovosCount" style="font-size:20px; font-weight:800; color:#BE123C; margin-top:2px;">0</div>
+        </div>
+        <span style="font-size:22px;">🔴</span>
+      </div>
+
+      <div style="background:#FEFCE8; border:1px solid #FEF08A; border-left:4px solid #CA8A04; border-radius:4px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#854D0E;">⚙️ Em Elaboração</span>
+          <div id="kpiEmAndamentoCount" style="font-size:20px; font-weight:800; color:#A16207; margin-top:2px;">0</div>
+        </div>
+        <span style="font-size:22px;">🟡</span>
+      </div>
+
+      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-left:4px solid #2563EB; border-radius:4px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#1E40AF;">📤 Enviados (Aguardando)</span>
+          <div id="kpiEnviadosCount" style="font-size:20px; font-weight:800; color:#1D4ED8; margin-top:2px;">0</div>
+        </div>
+        <span style="font-size:22px;">📨</span>
+      </div>
+
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; border-left:4px solid #D97706; border-radius:4px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#92400E;">🔄 Ajustes Solicitados</span>
+          <div id="kpiAjustesCount" style="font-size:20px; font-weight:800; color:#B45309; margin-top:2px;">0</div>
+        </div>
+        <span style="font-size:22px;">🛠️</span>
+      </div>
+    </div>
+
+    <div class="card" id="abertos-empty" style="display:none;">
+      <div class="empty-state" style="padding:40px 20px;">
+        <span style="font-size:36px; display:block; margin-bottom:8px;">✨</span>
+        <b style="font-size:16px; color:var(--azul);">Nenhum pedido em aberto no momento!</b>
+        <p style="font-size:13px; color:var(--texto-suave); margin-top:6px;">Todas as solicitações recebidas pelo site, WhatsApp ou manuais foram concluídas e estão no Histórico.</p>
+      </div>
+    </div>
+
+    <div class="card" id="abertos-table-wrap">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <div>
+          <h2 style="margin:0;"><span class="dot"></span>Fila de Pedidos & Propostas em Aberto</h2>
+          <p style="font-size:12px; color:var(--texto-suave); margin:4px 0 0;">
+            Acompanhe novos pedidos, orçamentos em elaboração e propostas enviadas aos clientes aguardando resposta.
+          </p>
+        </div>
+        
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <!-- Filtro por Etapa do Funil Comercial -->
+          <div style="display:flex; gap:4px; background:#F1F5F9; padding:3px; border-radius:4px; flex-wrap:wrap;">
+            <button type="button" class="filter-btn active" data-etapa-abertos="todos" onclick="filtrarAbertosPorEtapa('todos')">Todos (<span id="contagemEtapaTodos">0</span>)</button>
+            <button type="button" class="filter-btn" data-etapa-abertos="novos" onclick="filtrarAbertosPorEtapa('novos')">🔴 Novos (<span id="contagemEtapaNovos">0</span>)</button>
+            <button type="button" class="filter-btn" data-etapa-abertos="andamento" onclick="filtrarAbertosPorEtapa('andamento')">⚙️ Elaboração (<span id="contagemEtapaAndamento">0</span>)</button>
+            <button type="button" class="filter-btn" data-etapa-abertos="enviados" onclick="filtrarAbertosPorEtapa('enviados')">📤 Enviados (<span id="contagemEtapaEnviados">0</span>)</button>
+            <button type="button" class="filter-btn" data-etapa-abertos="ajustes" onclick="filtrarAbertosPorEtapa('ajustes')">🔄 Ajustes (<span id="contagemEtapaAjustes">0</span>)</button>
+          </div>
+
+          <!-- Filtros por Origem: Site, WhatsApp, Manual -->
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button type="button" class="filter-btn active" data-origem-abertos="todos" onclick="filtrarAbertosPorOrigem('todos')">Todos (<span id="contagemAbertosTodos">0</span>)</button>
+            <button type="button" class="filter-btn" data-origem-abertos="site" onclick="filtrarAbertosPorOrigem('site')">🌐 Site (<span id="contagemAbertosSite">0</span>)</button>
+            <button type="button" class="filter-btn" data-origem-abertos="whatsapp" onclick="filtrarAbertosPorOrigem('whatsapp')">📱 WhatsApp (<span id="contagemAbertosWhatsapp">0</span>)</button>
+            <button type="button" class="filter-btn" data-origem-abertos="manual" onclick="filtrarAbertosPorOrigem('manual')">👤 Manual (<span id="contagemAbertosManual">0</span>)</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th style="width:8%;">Nº</th>
+            <th style="width:13%;">Etapa</th>
+            <th style="width:12%;">Origem</th>
+            <th style="width:23%;">Cliente / Empresa</th>
+            <th style="width:23%;">Descrição / Peça</th>
+            <th style="width:10%;">Entrada</th>
+            <th style="width:11%; text-align:center;">Ação</th>
+          </tr></thead>
+          <tbody id="abertos-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 2: CHATBOT & REGISTRO DE CONVERSAS ===================== -->
+  <section id="tab-chatbot" class="tab-panel">
+    <div class="card">
+      <h2><span class="dot"></span>Chatbot & Registro de Conversas</h2>
+      <p style="font-size:12px; color:var(--texto-suave); margin:0 0 16px;">
+        Registro das conversas trocadas entre o Chatbot e os clientes via WhatsApp/Web. Você pode visualizar o diálogo, inspecionar fotos enviadas e gerar o orçamento formal com 1 clique.
+      </p>
+
+      <div class="conversas-container">
+        <!-- Coluna Esquerda: Lista de Conversas -->
+        <div class="conversas-sidebar">
+          <div style="padding:10px; background:#F8FAFC; border-bottom:1px solid var(--linha); font-weight:700; font-size:11px; text-transform:uppercase; color:var(--texto-suave);">
+            Conversas Recentes
+          </div>
+          <ul class="conversas-lista" id="conversasListaBody">
+            <!-- Preenchido via JS -->
+          </ul>
+        </div>
+
+        <!-- Coluna Direita: Janela da Conversa Selecionada -->
+        <div class="chat-window">
+          <div class="chat-header">
+            <div>
+              <b id="chatAtivoNome" style="font-size:14px;">Selecione uma conversa</b>
+              <div id="chatAtivoTelefone" style="font-size:11px; color:var(--texto-suave);">---</div>
+            </div>
+            <div id="chatAtivoAcoes">
+              <!-- Botão Gerar Orçamento / Abrir Orçamento -->
+            </div>
+          </div>
+
+          <!-- Banner de Status da Janela de 24h da Meta -->
+          <div id="chatMetaJanelaBanner" class="chat-meta-banner" style="display:none;"></div>
+
+          <!-- Banner de Alerta / Link de Vídeo da Conversa Selecionada -->
+          <div id="chatVideoBanner" class="orcamento-video-banner" style="display:none; margin:10px 14px 0;"></div>
+
+          <div class="chat-body" id="chatAtivoMensagens">
+            <div class="empty-state">Selecione uma conversa à esquerda para ver o histórico de mensagens.</div>
+          </div>
+
+          <!-- Caixa de Envio / Simulação de Mensagem -->
+          <div class="chat-footer">
+            <input type="text" id="inputChatMsg" placeholder="Digite uma resposta ou mensagem..." onkeydown="if(event.key==='Enter') enviarMensagemAtendenteOuCliente()">
+            <button type="button" class="btn btn-primary" id="btnChatEnviar" onclick="enviarMensagemAtendenteOuCliente()">Enviar</button>
+            <button type="button" class="btn btn-ghost" style="font-size:11px;" title="Simular que o cliente enviou uma mensagem nova para reabrir a janela de 24h" onclick="simularMensagemClienteEntrando()">Simular Cliente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guia de Webhooks de Entrada: Chatbot & Site Oficial -->
+    <div class="grid grid-2">
+      <!-- Webhook WhatsApp/Chatbot -->
+      <div class="card">
+        <h2><span class="dot"></span>Webhook Chatbot / WhatsApp (Typebot, Baileys, Z-API)</h2>
+        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
+          Entrada para bots de WhatsApp com controle automático da janela de 24 horas da Meta.
+        </p>
+        <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px;">
+          POST <b id="displayWebhookChatbotUrl">http://localhost:3213/api/inbound/chatbot</b>
+        </div>
+      </div>
+
+      <!-- Webhook Site Oficial nardelliusinagem.com/orcamento -->
+      <div class="card">
+        <h2><span class="dot"></span>Webhook do Site (nardelliusinagem.com/orcamento)</h2>
+        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
+          Recebe solicitações diretas do formulário do site com fotos, vídeos e tipos de peças.
+        </p>
+        <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px; margin-bottom:12px;">
+          POST <b id="displayWebhookSiteUrl">http://localhost:3213/api/webhook/site</b>
+        </div>
+        <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalSimuladorSite()">🌐 Testar / Simular Envio do Site</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 3: HISTÓRICO / CONCLUÍDOS ===================== -->
+  <section id="tab-salvos" class="tab-panel">
+    <div class="card" id="salvos-empty" style="display:none;">
+      <div class="empty-state">Nenhum orçamento concluído no histórico ainda. Quando aprovar um orçamento em aberto, ele constará aqui.</div>
+    </div>
+    <div class="card" id="salvos-table-wrap">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <div>
+          <h2 style="margin:0;"><span class="dot"></span>Histórico de Orçamentos Concluídos</h2>
+          <p style="font-size:12px; color:var(--texto-suave); margin:4px 0 0;">Propostas finalizadas, aprovadas e arquivadas.</p>
+        </div>
+        
+        <!-- Filtros por Origem: Site, WhatsApp, Manual -->
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <button type="button" class="filter-btn active" data-origem="todos" onclick="filtrarHistoricoPorOrigem('todos')">Todos (<span id="contagemTodos">0</span>)</button>
+          <button type="button" class="filter-btn" data-origem="site" onclick="filtrarHistoricoPorOrigem('site')">🌐 Site (<span id="contagemSite">0</span>)</button>
+          <button type="button" class="filter-btn" data-origem="whatsapp" onclick="filtrarHistoricoPorOrigem('whatsapp')">📱 WhatsApp (<span id="contagemWhatsapp">0</span>)</button>
+          <button type="button" class="filter-btn" data-origem="manual" onclick="filtrarHistoricoPorOrigem('manual')">👤 Manual (<span id="contagemManual">0</span>)</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th style="width:7%;">Nº</th>
+            <th style="width:12%;">Status</th>
+            <th style="width:10%;">Origem</th>
+            <th style="width:22%;">Cliente / Empresa</th>
+            <th style="width:23%;">Descrição / Peça</th>
+            <th style="width:9%;">Data</th>
+            <th style="width:9%;" class="num">Total</th>
+            <th style="width:18%; text-align:center;">Ações</th>
+          </tr></thead>
+          <tbody id="salvos-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: CLIENTES (Cadastro e Gestão CRM) ===================== -->
+  <section id="tab-clientes" class="tab-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2 style="margin:0;"><span class="dot"></span>Cadastro & Gestão de Clientes</h2>
+        <p style="margin:4px 0 0; font-size:12px; color:var(--texto-suave);">
+          Base de clientes da Nardelli Usinagem. Selecione um cliente para orçar rapidamente ou gerencie os dados cadastrais.
+        </p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input id="buscaClientesInput" placeholder="🔍 Buscar por nome, empresa, tel ou email..." oninput="filtrarListaClientes(this.value)" style="width:280px; font-size:12px; padding:6px 10px;">
+        <button type="button" class="btn btn-primary" onclick="abrirModalNovoCliente()">+ Novo Cliente</button>
+      </div>
+    </div>
+
+    <!-- Tabela de Clientes Cadastrados -->
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:26%;">Cliente / Razão Social</th>
+              <th style="width:16%;">Telefone / WhatsApp</th>
+              <th style="width:18%;">E-mail</th>
+              <th style="width:24%;">Endereço</th>
+              <th style="width:16%; text-align:center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-clientes-body">
+            <!-- Linhas renderizadas dinamicamente via JS -->
+          </tbody>
+        </table>
+      </div>
+      <div id="clientesVazioMsg" style="display:none; padding:32px; text-align:center; color:var(--texto-suave); font-size:13px;">
+        Nenhum cliente cadastrado ainda. Salve um cliente pelo formulário de orçamento ou clique em "+ Novo Cliente" para cadastrar!
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 4: INSUMOS (Fiel ao modelo.html) ===================== -->
+  <section id="tab-insumos" class="tab-panel">
+    <div class="card">
+      <h2><span class="dot"></span>Catálogo de insumos (matéria-prima, parafusos, consumíveis…)</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Descrição do Material / Insumo</th>
+            <th style="width:18%;">Fornecedor</th>
+            <th style="width:16%;">Unid. Medida</th>
+            <th style="width:16%;" class="num">Preço Unit. (R$)</th>
+            <th style="width:6%;"></th>
+          </tr></thead>
+          <tbody id="insumos-catalogo-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button type="button" class="btn btn-add" onclick="addInsumoCatalogoRow()">+ Adicionar insumo</button>
+        <button type="button" class="btn btn-primary" onclick="salvarCatalogoInsumos()">💾 Salvar catálogo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 5: MÁQUINAS (Fiel ao modelo.html) ===================== -->
+  <section id="tab-maquinas" class="tab-panel">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+        <div>
+          <h2 style="margin-bottom:4px;"><span class="dot"></span>Parque Fabril & Catálogo de Máquinas</h2>
+          <p style="font-size:12px; color:var(--texto-suave); margin:0;">
+            Máquinas industriais com especificações dimensionais, capacidades máximas e taxas horárias utilizadas pela IA para alocação ideal de serviços.
+          </p>
+        </div>
+        <span id="contadorMaquinasVisiveis" class="badge" style="background:var(--laranja-glow); color:var(--laranja); font-weight:700; font-size:12px; padding:6px 12px; border-radius:12px; border:1px solid rgba(255,107,0,0.25);">
+          27 máquinas
+        </span>
+      </div>
+
+      <!-- Barra de Filtros e Busca Rápida -->
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:260px;">
+          <input id="buscaMaquinaInput" placeholder="🔍 Buscar por nome, diâmetro (Ø), comprimento, categoria ou modelo..." oninput="filtrarTabelaMaquinas()" style="width:100%; font-size:13px; padding:8px 12px;">
+        </div>
+        <div style="width:230px;">
+          <select id="filtroCategoriaMaquina" onchange="filtrarTabelaMaquinas()" style="width:100%; font-size:13px; padding:8px 10px;">
+            <option value="">Todas as Categorias</option>
+            <option value="Torneamento">Torneamento Convencional</option>
+            <option value="CNC">Centros de Usinagem e CNC</option>
+            <option value="Fresamento">Fresamento e Plainamento</option>
+            <option value="Furação">Furação e Mandrilhamento</option>
+            <option value="Retífica">Retífica e Acabamento</option>
+            <option value="Térmico">Tratamento Térmico</option>
+            <option value="Corte">Corte e Conformação</option>
+            <option value="Solda">Caldeiraria e Solda</option>
+            <option value="Manutenção">Manutenção Industrial</option>
+            <option value="Superficial">Tratamento Superficial</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th style="min-width:240px;">Máquina / Recurso & Fabricante</th>
+            <th style="width:16%; min-width:140px;">Categoria</th>
+            <th style="width:26%; min-width:220px;">Capacidade Técnica & Dimensões</th>
+            <th style="width:9%; min-width:90px;" class="num">Normal (R$/h)</th>
+            <th style="width:9%; min-width:85px;" class="num">50% (R$/h)</th>
+            <th style="width:9%; min-width:85px;" class="num">100% (R$/h)</th>
+            <th style="width:5%;"></th>
+          </tr></thead>
+          <tbody id="maquinas-catalogo-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-add" onclick="addMaquinaCatalogoRow()">+ Adicionar máquina</button>
+        <button type="button" class="btn btn-primary" onclick="salvarCatalogoMaquinas()">💾 Salvar catálogo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 6: CONFIGURAÇÕES (Fiel ao modelo.html) ===================== -->
+  <section id="tab-config" class="tab-panel">
+    <div class="card">
+      <h2><span class="dot"></span>Dados da empresa</h2>
+      <div class="grid grid-2">
+        <label class="field"><span>Nome da empresa</span><input id="cfgNomeEmpresa"></label>
+        <label class="field"><span>Cidade / estado</span><input id="cfgCidade"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Margem sobre insumos (matéria-prima)</h2>
+      <div class="grid grid-3" style="max-width:520px;">
+        <label class="field"><span>Despesas fixas %</span><input id="cfgDespFixasInsumo" type="number" step="0.01"></label>
+        <label class="field"><span>Imposto %</span><input id="cfgImpostoInsumo" type="number" step="0.01"></label>
+        <label class="field"><span>Lucro %</span><input id="cfgLucroInsumo" type="number" step="0.01"></label>
+      </div>
+      <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">Fórmula: valor = custo insumos ÷ (1 − soma dos três percentuais).</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Margem sobre mão de obra / hora máquina</h2>
+      <div class="grid grid-3" style="max-width:520px;">
+        <label class="field"><span>Despesas fixas %</span><input id="cfgDespFixasMO" type="number" step="0.01"></label>
+        <label class="field"><span>Imposto %</span><input id="cfgImpostoMO" type="number" step="0.01"></label>
+        <label class="field"><span>Lucro %</span><input id="cfgLucroMO" type="number" step="0.01"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Frete, desconto e juros</h2>
+      <div class="grid grid-3" style="max-width:520px;">
+        <label class="field"><span>Custo por km (R$)</span><input id="cfgCustoKm" type="number" step="0.01"></label>
+        <label class="field"><span>Margem p/ desconto %</span><input id="cfgMargemDesconto" type="number" step="0.01"></label>
+        <label class="field"><span>Juros médio mensal %</span><input id="cfgJurosMensal" type="number" step="0.01"></label>
+      </div>
+    </div>
+
+    <!-- Configuração de IA via OpenRouter (Sistema Roteador + Claude 3.5 Sonnet) -->
+    <div class="card">
+      <h2><span class="dot"></span>Modelos de IA (OpenRouter)</h2>
+      <div class="grid grid-2">
+        <label class="field"><span>Chave de API OpenRouter (sk-or-v1-...)</span>
+          <div style="display:flex; gap:6px;">
+            <input id="cfgOpenrouterKey" type="password" placeholder="sk-or-v1-xxxxxxxx">
+            <button type="button" class="btn btn-ghost" style="padding:6px 12px;" onclick="testarChaveOpenRouter()">Testar</button>
+          </div>
+        </label>
+        <label class="field"><span>Modelo de Geração Principal (Anthropic: Claude Sonnet 5.5)</span>
+          <input id="cfgModeloGerador" value="anthropic/claude-sonnet-5.5">
+        </label>
+        <label class="field"><span>Modelo Roteador JEV (Triagem Rápida)</span>
+          <input id="cfgModeloRoteador" value="google/gemini-2.5-flash">
+        </label>
+        <label class="field"><span>Modelo de Contingência / Fallback (Qwen 3.8 Pro)</span>
+          <input id="cfgModeloEconomico" value="qwen/qwen3.8-max-prime">
+        </label>
+      </div>
+      <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
+        O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Caso o provedor apresente instabilidade momentânea, o sistema aciona automaticamente o modelo de contingência (Qwen 3.8 Pro).
+      </p>
+    </div>
+
+    <!-- Banco de Dados PostgreSQL & Persistência -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <h2 style="margin:0;"><span class="dot"></span>Banco de Dados PostgreSQL & Persistência</h2>
+        <span id="dbStatusBadge" class="db-status-badge pg-off">○ Modo Local (JSON com Fallback)</span>
+      </div>
+      <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
+        O histórico de orçamentos, conversas do chatbot e cadastro de usuários podem ser sincronizados diretamente em uma base PostgreSQL.
+      </p>
+      <div class="grid grid-2">
+        <label class="field" style="grid-column:span 2;"><span>String de Conexão (DATABASE_URL)</span>
+          <div style="display:flex; gap:8px;">
+            <input id="cfgPostgresUrl" placeholder="postgresql://usuario:senha@localhost:5432/nardelli" value="postgresql://postgres@localhost:5432/nardelli">
+            <button type="button" class="btn btn-primary" onclick="conectarPostgresPelaTela()">Conectar & Testar</button>
+          </div>
+        </label>
+      </div>
+      <div id="pgMsgStatus" style="font-size:11px; margin-top:8px; color:var(--texto-suave);"></div>
+    </div>
+
+    <!-- Gestão de Usuários do Sistema -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <h2 style="margin:0;"><span class="dot"></span>Usuários com Acesso ao Sistema</h2>
+        <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalAuth('register')">+ Cadastrar Novo Usuário</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Nome</th><th>E-mail</th><th>Cargo</th><th>Data Cadastro</th>
+          </tr></thead>
+          <tbody id="lista-usuarios-body">
+            <tr><td colspan="4" style="text-align:center; color:var(--texto-suave);">Carregando usuários...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar configurações</button>
+  </section>
+
+</main>
+
+<!-- ===================== MODAL DE AUTENTICAÇÃO (LOGIN / REGISTRO) ===================== -->
+<div id="modalAuth" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalAuth()">
+  <div class="modal-card">
+    <button class="modal-close-btn" onclick="fecharModalAuth()">✕</button>
+    
+    <div class="modal-tabs">
+      <button type="button" class="modal-tab-btn active" id="tabBtnLogin" onclick="alternarTabAuth('login')">Entrar</button>
+      <button type="button" class="modal-tab-btn" id="tabBtnRegister" onclick="alternarTabAuth('register')">Cadastrar Usuário</button>
+    </div>
+
+    <!-- Form Login -->
+    <div id="formLoginWrap">
+      <div class="grid" style="gap:12px;">
+        <label class="field"><span>E-mail</span><input id="authLoginEmail" type="email" placeholder="seu.email@nardelliusinagem.com"></label>
+        <label class="field"><span>Senha</span><input id="authLoginSenha" type="password" placeholder="••••••••"></label>
+        <button type="button" class="btn btn-primary" style="margin-top:8px;" onclick="executarLogin()">Entrar no Sistema</button>
+        <p style="font-size:11px; color:var(--texto-suave); text-align:center; margin:4px 0 0;">
+          Usuário padrão: <b>admin@nardelliusinagem.com</b> / <b>nardelli123</b>
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Cadastro -->
+    <div id="formRegisterWrap" style="display:none;">
+      <div class="grid" style="gap:12px;">
+        <label class="field"><span>Nome Completo</span><input id="authRegNome" placeholder="Ex: João Roberto"></label>
+        <label class="field"><span>E-mail Corporativo</span><input id="authRegEmail" type="email" placeholder="joao@nardelliusinagem.com"></label>
+        <label class="field"><span>Senha de Acesso (mínimo 6 caracteres)</span><input id="authRegSenha" type="password" placeholder="••••••••"></label>
+        <label class="field"><span>Cargo / Função</span>
+          <select id="authRegCargo">
+            <option value="Técnico de Usinagem">Técnico de Usinagem</option>
+            <option value="Engenheiro de Orçamentos">Engenheiro de Orçamentos</option>
+            <option value="Vendedor / Atendimento">Vendedor / Atendimento</option>
+            <option value="Gerente Operacional">Gerente Operacional</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-primary" style="margin-top:8px;" onclick="executarCadastro()">Cadastrar Usuário</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE SIMULAÇÃO DO FORMULÁRIO DO SITE ===================== -->
+<div id="modalSiteSimulador" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalSimuladorSite()">
+  <div class="modal-card" style="max-width:580px;">
+    <button class="modal-close-btn" onclick="fecharModalSimuladorSite()">✕</button>
+    <h2><span class="dot"></span>Simulador de Formulário do Site Oficial</h2>
+    <p style="font-size:12px; color:var(--texto-suave); margin-bottom:14px;">
+      Simula o envio de um cliente preenchendo o formulário em <b>https://www.nardelliusinagem.com/orcamento</b>. Os dados cairão no webhook com origem "Site".
+    </p>
+
+    <div class="grid grid-2" style="gap:10px;">
+      <label class="field"><span>Nome do Solicitante</span><input id="simSiteNome" value="Fernando Queiroz"></label>
+      <label class="field"><span>Empresa</span><input id="simSiteEmpresa" value="Fertilizantes Vale Verde"></label>
+      <label class="field"><span>Telefone</span><input id="simSiteTel" value="(79) 99876-1122"></label>
+      <label class="field"><span>E-mail</span><input id="simSiteEmail" value="compras@valeverde.com.br"></label>
+    </div>
+
+    <label class="field" style="margin-top:10px;"><span>Tipos de Peça / Serviços Selecionados no Site</span>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; font-size:12px;">
+        <label><input type="checkbox" id="simPecaEngrenagem" checked> Engrenagem</label>
+        <label><input type="checkbox" id="simPecaEixo" checked> Eixo</label>
+        <label><input type="checkbox" id="simPecaPolia"> Polia</label>
+        <label><input type="checkbox" id="simPecaRedutor"> Redutor</label>
+        <label><input type="checkbox" id="simPecaManutencao"> Manutenção</label>
+        <label><input type="checkbox" id="simPecaTratamento" checked> Tratamento Térmico</label>
+      </div>
+    </label>
+
+    <label class="field" style="margin-top:10px;"><span>Observações Técnicas / Especificações</span>
+      <textarea id="simSiteObs" rows="3">Eixo escalonado Ø80x720mm com engrenagem helicoidal temperada e retificada para misturador industrial.</textarea>
+    </label>
+
+    <label class="field" style="margin-top:10px;"><span>Opção de Vídeo da Peça</span>
+      <select id="simSiteEnviarVideo" onchange="document.getElementById('simSiteLinkVideoWrap').style.display = (this.value === 'link' ? 'block' : 'none');">
+        <option value="contato">📹 Marcou que tem vídeo e quer enviar via WhatsApp (entrar em contato)</option>
+        <option value="link">🔗 Informou link direto do vídeo (YouTube / Google Drive)</option>
+        <option value="nenhum">❌ Não possui vídeo</option>
+      </select>
+    </label>
+    <div id="simSiteLinkVideoWrap" style="display:none; margin-top:8px;">
+      <label class="field"><span>Link do Vídeo da Peça (YouTube, Google Drive, Vimeo)</span>
+        <input id="simSiteLinkVideo" value="https://youtu.be/video-peca-exemplo" placeholder="https://...">
+      </label>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+      <button type="button" class="btn btn-ghost" onclick="fecharModalSimuladorSite()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="submeterSimulacaoSite()">Simular Envio do Site</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE ENVIO DA PROPOSTA AO CLIENTE ===================== -->
+<div id="modalEnviarProposta" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalEnviarProposta()">
+  <div class="modal-card" style="max-width:580px;">
+    <button class="modal-close-btn" onclick="fecharModalEnviarProposta()">✕</button>
+    <h2><span class="dot"></span>Enviar Proposta Comercial ao Cliente</h2>
+    <p style="font-size:12px; color:var(--texto-suave); margin-bottom:14px;">
+      Envie a proposta formalizada diretamente pelo <b>WhatsApp</b> ou copie o resumo oficial com os valores calculados.
+    </p>
+
+    <div style="background:#F8FAFC; border:1px solid var(--linha); border-radius:4px; padding:12px 14px; margin-bottom:14px;">
+      <div class="grid grid-3" style="gap:10px;">
+        <div><span style="font-size:11px; color:var(--texto-suave);">Cliente:</span> <b id="modalEnvioClienteNome">---</b></div>
+        <div><span style="font-size:11px; color:var(--texto-suave);">Orçamento:</span> <b id="modalEnvioNumero">#---</b></div>
+        <div><span style="font-size:11px; color:var(--texto-suave);">Telefone / WhatsApp:</span> <b id="modalEnvioTelefone">---</b></div>
+        <div><span style="font-size:11px; color:var(--texto-suave);">Qtd. / Unidade:</span> <b id="modalEnvioQtd">1 PÇ</b></div>
+        <div><span style="font-size:11px; color:var(--texto-suave);">Valor Unitário:</span> <b id="modalEnvioValorUnit" style="color:var(--azul);">R$ 0,00 / PÇ</b></div>
+        <div><span style="font-size:11px; color:var(--texto-suave);">Valor Total à Vista:</span> <b id="modalEnvioValor" style="color:var(--verde);">R$ 0,00</b></div>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>Mensagem Comercial Formatada para Envio</span>
+      <textarea id="modalEnvioMensagemTexto" rows="8" style="font-size:12px; line-height:1.4;"></textarea>
+    </label>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px;">
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn btn-whatsapp-web" onclick="dispararEnvioWhatsAppWeb()" style="padding:8px 16px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+          🟢 Abrir no WhatsApp Web
+        </button>
+        <button type="button" class="btn btn-ghost" onclick="copiarMensagemEnvio()" style="padding:8px 12px; font-size:12px;">
+          📋 Copiar Texto
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="confirmarEnvioProposta()" style="padding:8px 18px; font-size:12px; font-weight:700;">
+        ✅ Confirmar Envio e Marcar como "Enviado"
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE FEEDBACK / DECISÃO DO CLIENTE ===================== -->
+<div id="modalFeedbackCliente" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalFeedback()">
+  <div class="modal-card" style="max-width:520px;">
+    <button class="modal-close-btn" onclick="fecharModalFeedback()">✕</button>
+    <h2 id="modalFeedbackTitulo"><span class="dot"></span>Registrar Retorno do Cliente</h2>
+    <p id="modalFeedbackDescricao" style="font-size:12px; color:var(--texto-suave); margin-bottom:14px;"></p>
+
+    <!-- Campos Dinâmicos conforme a Ação -->
+    <div id="campoFeedbackAprovar" style="display:none;">
+      <label class="field"><span>Nº da Ordem de Compra / Pedido do Cliente (Opcional)</span>
+        <input id="feedbackNumPedido" placeholder="Ex: OC-4912 ou Pedido #882">
+      </label>
+      <label class="field" style="margin-top:10px;"><span>Observações do Faturamento / Condições Acordadas</span>
+        <textarea id="feedbackObsAprovar" rows="3" placeholder="Ex: Aprovado via WhatsApp pelo Eng. Marcos. Faturar em 28 dias após entrega."></textarea>
+      </label>
+    </div>
+
+    <div id="campoFeedbackAjuste" style="display:none;">
+      <label class="field"><span>O que o cliente solicitou alterar / negociar?</span>
+        <textarea id="feedbackObsAjuste" rows="4" placeholder="Ex: Solicitou 5% de desconto para fechar à vista, e pediu para antecipar a entrega para quinta-feira..."></textarea>
+      </label>
+    </div>
+
+    <div id="campoFeedbackRecusar" style="display:none;">
+      <label class="field"><span>Motivo Principal da Recusa</span>
+        <select id="feedbackMotivoRecusa">
+          <option value="Preço considerado elevado">Preço considerado elevado</option>
+          <option value="Prazo de entrega longo">Prazo de entrega muito longo</option>
+          <option value="Fechou com concorrente">Fechou com concorrente</option>
+          <option value="Cliente desistiu do projeto/manutenção">Cliente desistiu do projeto/manutenção</option>
+          <option value="Outro motivo">Outro motivo</option>
+        </select>
+      </label>
+      <label class="field" style="margin-top:10px;"><span>Detalhes / Observações da Recusa</span>
+        <textarea id="feedbackObsRecusar" rows="3" placeholder="Ex: Concorrente ofertou por R$ 550 com entrega em 2 dias..."></textarea>
+      </label>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+      <button type="button" class="btn btn-ghost" onclick="fecharModalFeedback()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btnSalvarFeedback" onclick="salvarFeedbackCliente()">Salvar no Histórico</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE HISTÓRICO DE INTERAÇÕES COM O CLIENTE ===================== -->
+<div id="modalHistoricoCliente" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalHistoricoCliente()">
+  <div class="modal-card" style="max-width:620px;">
+    <button class="modal-close-btn" onclick="fecharModalHistoricoCliente()">✕</button>
+    <h2><span class="dot"></span>Histórico de Interações com o Cliente</h2>
+    <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
+      Linha do tempo completa de eventos, envios de propostas, pedidos de ajustes e aprovações deste orçamento.
+    </p>
+
+    <!-- Lista da Linha do Tempo -->
+    <div id="historicoTimelineLista" style="max-height:360px; overflow-y:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px;">
+    </div>
+
+    <!-- Adicionar anotação rápida -->
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--linha);">
+      <label class="field"><span>Adicionar Anotação / Contato Telefônico</span>
+        <div style="display:flex; gap:8px;">
+          <input id="novoEventoAnotacao" placeholder="Ex: Liguei para o comprador, está aguardando diretoria aprovar..." style="flex:1;">
+          <button type="button" class="btn btn-primary" onclick="adicionarAnotacaoHistorico()" style="padding:6px 14px; font-size:12px;">Salvar</button>
+        </div>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE CADASTRO / EDIÇÃO DE CLIENTE ===================== -->
+<div id="modalCliente" class="modal-overlay" style="display:none;" onclick="if(event.target===this) fecharModalCliente()">
+  <div class="modal-card" style="max-width:560px;">
+    <button class="modal-close-btn" onclick="fecharModalCliente()">✕</button>
+    <h2 id="modalClienteTitulo"><span class="dot"></span>Novo Cliente</h2>
+    <p style="font-size:12px; color:var(--texto-suave); margin-bottom:14px;">
+      Preencha os dados do cliente para salvar no banco de dados e facilitar orçamentos futuros.
+    </p>
+
+    <input type="hidden" id="modalClienteId">
+
+    <div class="grid grid-2" style="gap:10px;">
+      <label class="field" style="grid-column:span 2;">
+        <span>Nome do Cliente / Razão Social *</span>
+        <input id="modalClienteNome" placeholder="Ex: Cervejaria Serigy Ltda" required>
+      </label>
+      <label class="field">
+        <span>CNPJ ou CPF</span>
+        <input id="modalClienteDoc" placeholder="Ex: 12.345.678/0001-90">
+      </label>
+      <label class="field">
+        <span>Pessoa de Contato / Solicitante</span>
+        <input id="modalClienteContato" placeholder="Ex: Eng. Rodrigo / Compras">
+      </label>
+      <label class="field">
+        <span>Telefone / WhatsApp</span>
+        <input id="modalClienteTel" placeholder="Ex: (79) 99876-5432">
+      </label>
+      <label class="field">
+        <span>E-mail</span>
+        <input id="modalClienteEmail" type="email" placeholder="contato@empresa.com.br">
+      </label>
+      <label class="field">
+        <span>CEP</span>
+        <input id="modalClienteCep" placeholder="49000-000" maxlength="9" oninput="formatarEConsultarCEPEmModal(this.value)">
+      </label>
+      <label class="field">
+        <span>Endereço</span>
+        <input id="modalClienteEndereco" placeholder="Ex: Distrito Industrial, Aracaju - SE">
+      </label>
+      <label class="field" style="grid-column:span 2;">
+        <span>Observações Técnicas / Faturamento</span>
+        <textarea id="modalClienteObs" rows="3" placeholder="Ex: Pagamento 28 DDL. Exige certificado de qualidade e relatório de dureza..."></textarea>
+      </label>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+      <button type="button" class="btn btn-ghost" onclick="fecharModalCliente()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="salvarModalCliente()">💾 Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lightbox para Visualização de Imagem em Alta Resolução -->
+<div id="lightboxModal" class="lightbox-modal" onclick="fecharLightboxImagem()">
+  <div class="lightbox-conteudo" onclick="event.stopPropagation()">
+    <button type="button" class="lightbox-fechar" onclick="fecharLightboxImagem()" title="Fechar">✕</button>
+    <img id="lightboxImg" class="lightbox-img" src="" alt="Visualização da Imagem">
+    <div id="lightboxLegenda" class="lightbox-legenda"></div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     DOCUMENTO OFICIAL DA PROPOSTA COMERCIAL (IMPRESSÃO / PDF A4)
+=============================================================== -->
+<div id="documento-proposta-impressao">
+  <div class="folha-proposta-a4" id="folhaPropostaConteudo">
+    <!-- Cabeçalho Timbrado Oficial Nardelli -->
+    <div class="proposta-cabecalho">
+      <div class="proposta-empresa-box">
+        <img class="proposta-logo-img" src="data:image/jpeg;base64,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" alt="Nardelli Usinagem">
+        <div class="proposta-empresa-info">
+          <h3>Nardelli Usinagem & Caldeiraria</h3>
+          <p>Usinagem de Precisão • Caldeiraria Pesada • Recuperação & Tratamento Térmico</p>
+          <p>Aracaju / Sergipe • Tel/WhatsApp: (79) 99123-4567 • E-mail: contato@nardelliusinagem.com.br</p>
+        </div>
+      </div>
+      <div class="proposta-orc-destaque">
+        <div class="titulo-doc">PROPOSTA COMERCIAL</div>
+        <div class="numero-orc" id="pdfNumeroOrc">#0001</div>
+        <div class="datas">
+          Emissão: <b id="pdfDataEmissao">30/10/2026</b><br>
+          Validade: <b>10 dias corridos</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados do Cliente -->
+    <div class="proposta-secao-titulo">👤 DADOS DO CLIENTE / SOLICITANTE</div>
+    <div class="proposta-cliente-grid">
+      <div class="proposta-campo-linha">
+        <span class="proposta-campo-label">Cliente:</span>
+        <b id="pdfClienteNome">Cliente / Empresa</b>
+      </div>
+      <div class="proposta-campo-linha">
+        <span class="proposta-campo-label">Contato:</span>
+        <span id="pdfClienteTel">(79) 90000-0000</span>
+      </div>
+      <div class="proposta-campo-linha" style="grid-column: span 2;">
+        <span class="proposta-campo-label">Endereço:</span>
+        <span id="pdfClienteEndereco">Endereço não informado</span>
+      </div>
+    </div>
+
+    <!-- Objeto da Proposta / Especificações Técnicas da Peça -->
+    <div class="proposta-secao-titulo">⚙️ ESCOPO & ESPECIFICAÇÕES TÉCNICAS DA PEÇA</div>
+    <div class="proposta-espec-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap;">
+        <b style="font-size:10.5pt; color:var(--azul);" id="pdfCategoriaPeca">Usinagem Geral</b>
+        <span style="font-size:9pt; font-weight:700; color:#0369A1; background:#E0F2FE; padding:2px 8px; border-radius:3px;" id="pdfQtdResumoBadge">Qtd: 1 PÇ</span>
+      </div>
+      <div id="pdfDescricaoServico" style="margin-bottom:8px; line-height:1.5; color:#1E293B;">
+        Descrição do serviço mecânico.
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:9pt; border-top:1px dashed #CBD5E1; padding-top:8px;">
+        <div><b>Matéria-Prima:</b> <span id="pdfMaterialPeca">Aço Carbono 1045</span></div>
+        <div id="pdfLinhaTratamento"><b>Tratamento Térmico:</b> <span id="pdfTratamentoTermico">Nenhum</span></div>
+        <div id="pdfLinhaDureza" style="display:none;"><b>Dureza Requerida:</b> <span id="pdfDureza">---</span></div>
+        <div id="pdfLinhaPrazo"><b>Prazo Estimado:</b> <span id="pdfPrazoFab">4 a 5 dias úteis</span></div>
+      </div>
+      <div id="pdfBoxObsTecnicas" style="margin-top:8px; font-size:8.5pt; color:#475569; display:none;">
+        <b>Observações / Tolerâncias:</b> <span id="pdfObsTecnicas"></span>
+      </div>
+
+      <!-- Imagem de Referência / Desenho da Peça se houver -->
+      <div id="pdfBoxDesenhoRef" style="margin-top:10px; display:none; align-items:center; gap:12px; background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:4px;">
+        <img id="pdfImgDesenho" src="" alt="Desenho / Foto da Peça" style="max-height:80px; max-width:130px; object-fit:contain; border-radius:3px; border:1px solid #CBD5E1;">
+        <div style="font-size:8pt; color:#64748B;">
+          <b style="color:var(--azul);">Croqui / Imagem Técnica Anexa</b><br>
+          Fornecida pelo solicitante para fabricação e conferência dimensional na oficina.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela de Valores Comerciais -->
+    <div class="proposta-secao-titulo">💵 RESUMO COMERCIAL & VALORES</div>
+    <table class="proposta-tabela-itens">
+      <thead>
+        <tr>
+          <th style="width:45px; text-align:center;">Item</th>
+          <th>Descrição dos Serviços / Fornecimento</th>
+          <th style="width:65px; text-align:center;">Qtd</th>
+          <th style="width:55px; text-align:center;">Unid</th>
+          <th style="width:110px; text-align:right;">Valor Unit.</th>
+          <th style="width:115px; text-align:right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center; font-weight:700;">01</td>
+          <td>
+            <b id="pdfTabelaItemTitulo">Fabricação e Usinagem Mecânica de Precisão</b>
+            <div style="font-size:8pt; color:#64748B;" id="pdfTabelaItemSub">Conforme especificações técnicas, tolerâncias e materiais detalhados acima.</div>
+          </td>
+          <td style="text-align:center;" id="pdfTabelaQtd">1</td>
+          <td style="text-align:center;" id="pdfTabelaUnid">PÇ</td>
+          <td style="text-align:right; font-weight:700; font-family:'JetBrains Mono',monospace;" id="pdfTabelaValorUnit">R$ 0,00</td>
+          <td style="text-align:right; font-weight:700; font-family:'JetBrains Mono',monospace;" id="pdfTabelaValorSubtotal">R$ 0,00</td>
+        </tr>
+        <tr id="pdfLinhaFreteTabela" style="display:none;">
+          <td style="text-align:center; font-weight:700;">02</td>
+          <td>
+            <b>Logística de Transporte e Entrega</b>
+            <div style="font-size:8pt; color:#64748B;" id="pdfTabelaFreteDesc">Entrega no endereço do cliente em Aracaju/SE</div>
+          </td>
+          <td style="text-align:center;">1</td>
+          <td style="text-align:center;">SV</td>
+          <td style="text-align:right; font-weight:700; font-family:'JetBrains Mono',monospace;" id="pdfTabelaFreteUnit">R$ 0,00</td>
+          <td style="text-align:right; font-weight:700; font-family:'JetBrains Mono',monospace;" id="pdfTabelaFreteTotal">R$ 0,00</td>
+        </tr>
+        <tr class="total-destaque">
+          <td colspan="4" style="text-align:right; text-transform:uppercase; font-size:9.5pt;">
+            VALOR TOTAL DA PROPOSTA:
+          </td>
+          <td colspan="2" style="text-align:right; font-size:12.5pt; color:var(--azul); font-family:'JetBrains Mono',monospace;" id="pdfTotalGeralProposta">
+            R$ 0,00
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="pdfOpcaoPrazoBox" style="margin-top:6px; font-size:8.5pt; color:#475569; text-align:right; display:none;">
+      * Opção parcelada faturada: <b id="pdfTextoPrazoParcelado">3x de R$ 0,00 no boleto bancário (Total: R$ 0,00)</b>
+    </div>
+
+    <!-- Condições Gerais de Fornecimento -->
+    <div class="proposta-secao-titulo">📋 CONDIÇÕES GERAIS DE FORNECIMENTO</div>
+    <div class="proposta-condicoes-grid">
+      <div>
+        <b>Prazo de Entrega:</b> <span id="pdfCondPrazo">4 a 5 dias úteis</span><br>
+        <b>Condição de Pagamento:</b> <span id="pdfCondPagto">À vista / Conforme cadastro</span><br>
+        <b>Garantia Técnica:</b> 90 dias contra defeitos de usinagem
+      </div>
+      <div>
+        <b>Local de Entrega:</b> <span id="pdfCondEntrega">Retirada na oficina (Aracaju/SE)</span><br>
+        <b>Tributos e Impostos:</b> Inclusos na proposta<br>
+        <b>Validade da Proposta:</b> 10 dias corridos
+      </div>
+    </div>
+
+    <!-- Aceite & Assinaturas -->
+    <div class="proposta-assinaturas">
+      <div>
+        <div class="proposta-linha-assinatura">NARDELLI USINAGEM & CALDEIRARIA</div>
+        <div style="font-size:7.5pt; color:#64748B; margin-top:2px;">Departamento Técnico e Comercial</div>
+      </div>
+      <div>
+        <div class="proposta-linha-assinatura">ACEITE DO CLIENTE (DE ACORDO)</div>
+        <div style="font-size:7.5pt; color:#64748B; margin-top:2px;">Nome Legível / Assinatura / Data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================================================
+     MODAL DE PRÉ-VISUALIZAÇÃO DA PROPOSTA COMERCIAL (PDF A4)
+=============================================================== -->
+<div id="modalPreviewProposta" class="modal-preview-proposta" onclick="fecharModalPreviewProposta()">
+  <div class="modal-preview-dialog" onclick="event.stopPropagation()">
+    <div class="modal-preview-topo">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:18px;">📄</span>
+        <b style="font-size:13px; letter-spacing:0.5px;">Pré-visualização da Proposta Comercial (PDF Direto ao Ponto)</b>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="button" class="btn btn-primary" style="padding:6px 16px; font-size:11px; font-weight:700;" onclick="executarImpressaoNavegador()">
+          🖨️ Imprimir / Salvar em PDF
+        </button>
+        <button type="button" class="btn btn-ghost" style="color:#fff; border-color:rgba(255,255,255,0.4); padding:6px 12px; font-size:11px;" onclick="fecharModalPreviewProposta()">
+          ✕ Fechar
+        </button>
+      </div>
+    </div>
+    <div class="modal-preview-corpo" id="modalPreviewCorpo">
+      <!-- Clone visual do documento para visualização confortável na tela -->
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="/js/app.js?v=20261030a"></script>
+</body>
+</html>
