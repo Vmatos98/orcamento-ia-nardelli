@@ -1,0 +1,58 @@
+name: Deploy Orçamento IA - Nardelli
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy na VPS (Self-Hosted Runner)
+    runs-on: self-hosted
+
+    steps:
+      - name: 1. Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: 2. Sincronizar Código para Diretório de Produção
+        run: |
+          PROJECT_DIR="$HOME/projetos/orcamento-nardelli"
+          echo "==> Diretório de execução: $PROJECT_DIR"
+          mkdir -p "$PROJECT_DIR"
+          mkdir -p "$PROJECT_DIR/data/uploads"
+
+          echo "==> Sincronizando arquivos (preservando .env e dados existentes)..."
+          rsync -av --delete \
+            --exclude='.env' \
+            --exclude='.env.local' \
+            --exclude='data/uploads/*' \
+            --exclude='data/database.json' \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            ./ "$PROJECT_DIR/"
+
+          # Cria o .env inicial se for o primeiro deploy na VPS
+          if [ ! -f "$PROJECT_DIR/.env" ]; then
+            echo "==> Arquivo .env não encontrado em $PROJECT_DIR. Criando cópia inicial de .env.example..."
+            cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
+            echo "⚠️ ATENÇÃO: Configure a chave OPENROUTER_API_KEY no arquivo $PROJECT_DIR/.env"
+          fi
+
+      - name: 3. Subir Contêineres Docker
+        run: |
+          cd "$HOME/projetos/orcamento-nardelli"
+
+          echo "==> Executando docker compose build & up..."
+          docker compose up -d --build --remove-orphans
+
+          echo "==> Aguardando estabilização dos serviços..."
+          sleep 5
+
+          echo "==> Status atual dos serviços:"
+          docker compose ps
+
+      - name: 4. Limpeza de Imagens Antigas
+        run: |
+          echo "==> Removendo imagens órfãs para liberar espaço em disco..."
+          docker image prune -f
