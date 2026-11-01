@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     name: Deploy na VPS (Self-Hosted Runner)
-    runs-on: self-hosted
+    runs-on: [self-hosted, orcamento-nardelli]
 
     steps:
       - name: 1. Checkout do Repositório
