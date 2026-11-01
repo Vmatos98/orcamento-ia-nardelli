@@ -6,14 +6,15 @@ services:
     container_name: nardelli-orcamento-ia
     restart: unless-stopped
     ports:
-      - "${HOST_PORT:-3213}:3005"
+      # Porta externa customizada na VPS (não convencional) -> porta interna 3005
+      - "${HOST_PORT:-3842}:3005"
     env_file:
       - .env
     environment:
       - PORT=3005
       - NODE_ENV=production
     volumes:
-      # Persistência de uploads técnicos e fallback de dados
+      # Persistência de uploads técnicos e dados
       - ./data:/app/data
     depends_on:
       postgres:
@@ -41,9 +42,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    # Exposto apenas no localhost da VPS para túnel SSH ou inspeção local segura
+    # Porta externa 15432 (não convencional) exposta apenas no localhost para evitar conflito com 5432 na VPS
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${PG_HOST_PORT:-15432}:5432"
 
 volumes:
   pgdata:
