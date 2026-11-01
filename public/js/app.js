@@ -71,8 +71,78 @@ function insumoRowHTML(d) {
   '</tr>';
 }
 
+function getQtdParaPeca(nomePeca) {
+  const qtdGeral = Math.max(1, num(document.getElementById('quantidadePecas')?.value) || 1);
+  if (!nomePeca) return qtdGeral;
+  const pecas = (window.orcOriginal && Array.isArray(window.orcOriginal.pecas)) ? window.orcOriginal.pecas : [];
+  const target = String(nomePeca).trim().toLowerCase();
+  const match = pecas.find(p => {
+    const np = String(p.nome || '').trim().toLowerCase();
+    return np && (np === target || target.includes(np) || np.includes(target));
+  });
+  if (match) {
+    const q = Number(match.quantidade || match.qtd);
+    if (!isNaN(q) && q > 0) return q;
+  }
+  return qtdGeral;
+}
+
+function onHorasUnitariasChange(inputEl) {
+  const tr = inputEl.closest('tr');
+  if (!tr) return;
+  const hUnit = num(inputEl.value);
+  const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
+  const qtd = getQtdParaPeca(pecaNome);
+  const inputTotal = tr.querySelector('.horas');
+  if (inputTotal) {
+    const hTotal = Number((hUnit * qtd).toFixed(2));
+    inputTotal.value = hTotal;
+  }
+  calcularTotais();
+}
+
+function onHorasTotaisChange(inputEl) {
+  const tr = inputEl.closest('tr');
+  if (!tr) return;
+  const hTotal = num(inputEl.value);
+  const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
+  const qtd = getQtdParaPeca(pecaNome);
+  const inputUnit = tr.querySelector('.horasUnitarias');
+  if (inputUnit) {
+    const hUnit = qtd > 0 ? Number((hTotal / qtd).toFixed(3)) : hTotal;
+    inputUnit.value = hUnit;
+  }
+  calcularTotais();
+}
+
+function onQuantidadePecasChange() {
+  const elFrete = document.getElementById('fretePecas');
+  const qtdEl = document.getElementById('quantidadePecas');
+  if (elFrete && qtdEl) {
+    elFrete.value = qtdEl.value;
+  }
+
+  // Atualiza as horas totais de cada operação mantendo a proporção da hora unitária por peça
+  document.querySelectorAll('#maquinas-body tr').forEach(tr => {
+    const inputUnit = tr.querySelector('.horasUnitarias');
+    const inputTotal = tr.querySelector('.horas');
+    if (inputUnit && inputTotal) {
+      const hUnit = num(inputUnit.value);
+      const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
+      const qtd = getQtdParaPeca(pecaNome);
+      if (hUnit > 0) {
+        inputTotal.value = Number((hUnit * qtd).toFixed(2));
+      } else if (num(inputTotal.value) > 0 && qtd > 0) {
+        inputUnit.value = Number((num(inputTotal.value) / qtd).toFixed(3));
+      }
+    }
+  });
+
+  calcularTotais();
+}
+
 function maquinaRowHTML(d) {
-  d = Object.assign({ nome: '', descricao: '', regime: 'normal', horas: 1, valorHora: 0, peca: '', etapa: 1, ordemProducao: 1 }, d);
+  d = Object.assign({ nome: '', descricao: '', regime: 'normal', horas: 1, horasUnitarias: 0, valorHora: 0, peca: '', etapa: 1, ordemProducao: 1 }, d);
   const pecaBadge = d.peca ? `
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
       <span style="background:#DBEAFE; color:#1E40AF; font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; border:1px solid #BFDBFE;">
@@ -82,6 +152,18 @@ function maquinaRowHTML(d) {
         Etapa ${d.etapa || 1}
       </span>
     </div>` : '';
+
+  const qtdLinha = getQtdParaPeca(d.peca);
+  let horasTotal = (d.horas !== undefined && d.horas !== null && !isNaN(Number(d.horas))) ? Number(d.horas) : 1;
+  let horasUnit = 0;
+  if (d.horasUnitarias !== undefined && d.horasUnitarias !== null && Number(d.horasUnitarias) > 0) {
+    horasUnit = Number(d.horasUnitarias);
+    if (!d.horas) {
+      horasTotal = Number((horasUnit * qtdLinha).toFixed(2));
+    }
+  } else {
+    horasUnit = qtdLinha > 0 ? Number((horasTotal / qtdLinha).toFixed(3)) : horasTotal;
+  }
 
   return '<tr class="maquina-row" data-peca="' + escapeAttr(d.peca || '') + '" data-etapa="' + (d.etapa || 1) + '" data-ordem-producao="' + (d.ordemProducao || 1) + '">' +
     '<td>' +
@@ -97,7 +179,8 @@ function maquinaRowHTML(d) {
       '<option value="h50"' + (d.regime === 'h50' ? ' selected' : '') + '>50% Extra</option>' +
       '<option value="h100"' + (d.regime === 'h100' ? ' selected' : '') + '>100% Noturno</option>' +
     '</select></td>' +
-    '<td><input type="number" step="0.1" class="horas num" value="' + d.horas + '" oninput="calcularTotais()"></td>' +
+    '<td><input type="number" step="0.001" min="0" class="horasUnitarias num" value="' + horasUnit + '" title="Horas por unidade (tempo por peça)" placeholder="0.000" oninput="onHorasUnitariasChange(this)"></td>' +
+    '<td><input type="number" step="0.01" min="0" class="horas num" value="' + horasTotal + '" title="Horas totais para o lote completo" placeholder="0.0" oninput="onHorasTotaisChange(this)"></td>' +
     '<td><input type="number" step="0.01" class="valorHora num" value="' + d.valorHora + '" oninput="calcularTotais()"></td>' +
     '<td class="subtotal num">R$ 0,00</td>' +
     '<td style="text-align:center;"><button type="button" class="rm" onclick="this.closest(\'tr\').remove(); calcularTotais();">✕</button></td>' +
@@ -1029,6 +1112,7 @@ function coletarOrcamentoAtualDoDOM(statusForcado) {
       nome: tr.querySelector('.nome')?.value.trim() || '',
       descricao: tr.querySelector('.descricao')?.value.trim() || '',
       regime: tr.querySelector('.regime')?.value || 'normal',
+      horasUnitarias: num(tr.querySelector('.horasUnitarias')?.value) || 0,
       horas: num(tr.querySelector('.horas')?.value) || 1,
       valorHora: num(tr.querySelector('.valorHora')?.value) || 0,
     })).filter(m => m.nome !== ''),

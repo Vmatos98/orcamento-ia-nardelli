@@ -201,7 +201,16 @@ function renderizarTabelaMaquinas() {
     ? orcamentoAtual.itensMaquina
     : [{ nome: '', descricao: '', regime: 'normal', horas: 1, valorHora: 0 }];
 
-  tbody.innerHTML = itens.map((item, idx) => `
+  const qtdGeral = Math.max(1, parseFloat(document.getElementById('quantidadePecas')?.value) || 1);
+  tbody.innerHTML = itens.map((item, idx) => {
+    const horasTotal = (item.horas !== undefined && item.horas !== null) ? Number(item.horas) : 1;
+    let horasUnit = 0;
+    if (item.horasUnitarias !== undefined && item.horasUnitarias !== null && Number(item.horasUnitarias) > 0) {
+      horasUnit = Number(item.horasUnitarias);
+    } else {
+      horasUnit = qtdGeral > 0 ? Number((horasTotal / qtdGeral).toFixed(3)) : horasTotal;
+    }
+    return `
     <tr data-idx="${idx}">
       <td><input type="text" list="datalist-maquinas" class="maq-nome" value="${escapeHTML(item.nome)}" onchange="onMaquinaNomeChange(this, ${idx})"></td>
       <td><textarea class="maq-desc" rows="2" placeholder="Passo a passo sequencial da operação...">${escapeHTML(item.descricao || '')}</textarea></td>
@@ -212,12 +221,48 @@ function renderizarTabelaMaquinas() {
           <option value="h100" ${item.regime === 'h100' ? 'selected' : ''}>+100% Noturno</option>
         </select>
       </td>
-      <td><input type="number" step="0.1" class="maq-horas num" value="${item.horas}" oninput="calcularTotais()"></td>
+      <td><input type="number" step="0.001" min="0" class="maq-horas-unit num" value="${horasUnit}" title="Horas por peça" placeholder="0.000" oninput="onOrcamentoHorasUnitariasChange(this, ${idx})"></td>
+      <td><input type="number" step="0.1" min="0" class="maq-horas num" value="${horasTotal}" title="Horas totais" placeholder="0.0" oninput="onOrcamentoHorasTotaisChange(this, ${idx})"></td>
       <td class="num"><input type="number" step="0.01" class="maq-valorHora num" value="${item.valorHora}" oninput="calcularTotais()"></td>
       <td class="num maq-subtotal">R$ 0,00</td>
       <td style="text-align:center;"><button type="button" class="btn-rm" onclick="removerMaquinaRow(${idx})">✕</button></td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
+}
+
+function onOrcamentoHorasUnitariasChange(input, idx) {
+  const tr = input.closest('tr');
+  if (!tr) return;
+  const hUnit = parseFloat(input.value) || 0;
+  const qtdGeral = Math.max(1, parseFloat(document.getElementById('quantidadePecas')?.value) || 1);
+  const inputTotal = tr.querySelector('.maq-horas');
+  if (inputTotal) {
+    const hTotal = Number((hUnit * qtdGeral).toFixed(2));
+    inputTotal.value = hTotal;
+    if (orcamentoAtual.itensMaquina && orcamentoAtual.itensMaquina[idx]) {
+      orcamentoAtual.itensMaquina[idx].horas = hTotal;
+      orcamentoAtual.itensMaquina[idx].horasUnitarias = hUnit;
+    }
+  }
+  calcularTotais();
+}
+
+function onOrcamentoHorasTotaisChange(input, idx) {
+  const tr = input.closest('tr');
+  if (!tr) return;
+  const hTotal = parseFloat(input.value) || 0;
+  const qtdGeral = Math.max(1, parseFloat(document.getElementById('quantidadePecas')?.value) || 1);
+  const inputUnit = tr.querySelector('.maq-horas-unit');
+  if (inputUnit) {
+    const hUnit = qtdGeral > 0 ? Number((hTotal / qtdGeral).toFixed(3)) : hTotal;
+    inputUnit.value = hUnit;
+    if (orcamentoAtual.itensMaquina && orcamentoAtual.itensMaquina[idx]) {
+      orcamentoAtual.itensMaquina[idx].horas = hTotal;
+      orcamentoAtual.itensMaquina[idx].horasUnitarias = hUnit;
+    }
+  }
+  calcularTotais();
 }
 
 function addMaquinaRow() {

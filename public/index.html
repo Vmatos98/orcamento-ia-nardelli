@@ -214,7 +214,7 @@
               <div style="display:flex; gap:8px;">
                 <label class="field" style="flex:1;">
                   <span>Qtd. Peças</span>
-                  <input id="quantidadePecas" type="number" min="1" step="1" value="1" placeholder="Ex: 1" oninput="if(document.getElementById('fretePecas')) document.getElementById('fretePecas').value = this.value; calcularTotais();">
+                  <input id="quantidadePecas" type="number" min="1" step="1" value="1" placeholder="Ex: 1" oninput="onQuantidadePecasChange()">
                 </label>
                 <label class="field" style="width:105px;">
                   <span>Unid. Peça</span>
@@ -595,12 +595,13 @@
         <div style="overflow-x:auto;">
           <table>
             <thead><tr>
-              <th style="width:28%;">Componente / Máquina</th>
-              <th style="width:24%;">Passo a passo sequencial</th>
-              <th style="width:11%;">Regime</th>
-              <th style="width:9%;">Horas</th>
-              <th style="width:12%;" class="num">Valor h. normal</th>
-              <th style="width:12%;" class="num">Subtotal</th>
+              <th style="width:23%;">Componente / Máquina</th>
+              <th style="width:21%;">Passo a passo sequencial</th>
+              <th style="width:10%;">Regime</th>
+              <th style="width:10%;" title="Tempo de operação gasto em 1 peça unitária">H. Unit. (p/ pç)</th>
+              <th style="width:10%;" title="Horas totais para o lote completo">Horas Totais</th>
+              <th style="width:11%;" class="num">Valor h. normal</th>
+              <th style="width:11%;" class="num">Subtotal</th>
               <th style="width:4%;"></th>
             </tr></thead>
             <tbody id="maquinas-body"></tbody>
