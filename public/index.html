@@ -407,7 +407,7 @@
           <button type="button" class="btn btn-ghost" style="padding:6px 14px; font-size:11px; font-weight:700; color:var(--azul); border-color:var(--azul);" onclick="abrirPreviewPropostaPDF()" title="Pré-visualizar e Imprimir Proposta Formal Direta ao Ponto em PDF">
             🖨️ Proposta em PDF
           </button>
-          <button type="button" class="btn btn-primary" style="padding:6px 14px; font-size:11px;" onclick="rodarAnaliseIA()" title="Recalcular itens usando a IA">
+          <button type="button" id="btnReanalisarTopo" class="btn btn-primary" style="padding:6px 14px; font-size:11px;" onclick="rodarAnaliseIA()" title="Recalcular itens usando a IA">
             🔄 Reanalisar com IA
           </button>
         </div>
@@ -1448,6 +1448,38 @@
     <button type="button" class="lightbox-fechar" onclick="fecharLightboxImagem()" title="Fechar">✕</button>
     <img id="lightboxImg" class="lightbox-img" src="" alt="Visualização da Imagem">
     <div id="lightboxLegenda" class="lightbox-legenda"></div>
+  </div>
+<!-- Overlay Global de Bloqueio Durante Análise / Recálculo de IA -->
+<div id="overlayBloqueioIA" style="display:none; position:fixed; inset:0; z-index:100000; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#FFFFFF; border-radius:12px; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.15); width:100%; max-width:460px; overflow:hidden; border-top:4px solid #2563EB; animation:modalPopIn 0.25s ease-out;">
+    <div style="padding:26px 24px 22px 24px; text-align:center;">
+      
+      <!-- Ícone tecnológico animado -->
+      <div style="width:68px; height:68px; margin:0 auto 16px auto; position:relative; display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; inset:0; border-radius:50%; border:3px solid #DBEAFE; border-top-color:#2563EB; animation:spinIA 1s linear infinite;"></div>
+        <div style="position:absolute; inset:6px; border-radius:50%; border:2px dashed #93C5FD; animation:spinIA 3s linear infinite reverse;"></div>
+        <div style="font-size:28px; animation:pulseIcon 1.5s ease-in-out infinite;">🤖</div>
+      </div>
+
+      <h3 id="overlayTituloIA" style="margin:0 0 8px 0; font-size:17px; font-weight:800; color:#0F172A; letter-spacing:-0.2px;">
+        Analisando com Inteligência Artificial
+      </h3>
+      <p id="overlaySubtituloIA" style="margin:0 0 20px 0; font-size:13px; color:#475569; line-height:1.5;">
+        Consultando catálogo de máquinas Nardelli, tolerâncias mecânicas e calibrando o orçamento...
+      </p>
+
+      <!-- Barra de progresso contínua animada -->
+      <div style="height:6px; width:100%; background:#E2E8F0; border-radius:999px; overflow:hidden; position:relative; margin-bottom:18px;">
+        <div style="position:absolute; top:0; bottom:0; width:45%; background:linear-gradient(90deg, #F2790C, #2563EB, #10B981); border-radius:999px; animation:progressSlide 1.6s ease-in-out infinite;"></div>
+      </div>
+
+      <!-- Aviso explicativo de segurança e bloqueio -->
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 12px; font-size:11px; color:#64748B; display:flex; align-items:center; gap:8px; text-align:left;">
+        <span style="font-size:16px;">🔒</span>
+        <span>Ações bloqueadas temporariamente para evitar requisições concorrentes e garantir a integridade dos cálculos.</span>
+      </div>
+
+    </div>
   </div>
 </div>
 

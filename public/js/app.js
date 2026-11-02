@@ -1919,7 +1919,70 @@ function initDropzoneEClipboard() {
   });
 }
 
+/* ===============================================================
+   CONTROLE DE BLOQUEIO GLOBAL DE TELA DURANTE OPERAÇÕES DE IA
+=============================================================== */
+let isAILoading = false;
+
+function bloquearTelaIA(titulo, subtitulo) {
+  isAILoading = true;
+  const overlay = document.getElementById('overlayBloqueioIA');
+  const elTitulo = document.getElementById('overlayTituloIA');
+  const elSubtitulo = document.getElementById('overlaySubtituloIA');
+
+  if (elTitulo && titulo) elTitulo.textContent = titulo;
+  if (elSubtitulo && subtitulo) elSubtitulo.textContent = subtitulo;
+  if (overlay) overlay.style.display = 'flex';
+
+  // Desabilita botões e elementos acionáveis para evitar requisições concorrentes
+  document.querySelectorAll('#btnAnalisar, #btnRecalcularIA, #btnReanalisarTopo, .btn-analisar-destaque, button[onclick*="rodarAnaliseIA"], button[onclick*="executarAjusteRecalculoIA"]').forEach(b => {
+    b.disabled = true;
+    b.classList.add('loading-disabled');
+  });
+
+  document.body.style.cursor = 'wait';
+}
+
+function desbloquearTelaIA() {
+  isAILoading = false;
+  const overlay = document.getElementById('overlayBloqueioIA');
+  if (overlay) overlay.style.display = 'none';
+
+  // Reabilita os botões
+  document.querySelectorAll('#btnAnalisar, #btnRecalcularIA, #btnReanalisarTopo, .btn-analisar-destaque, button[onclick*="rodarAnaliseIA"], button[onclick*="executarAjusteRecalculoIA"]').forEach(b => {
+    b.disabled = false;
+    b.classList.remove('loading-disabled');
+  });
+
+  const btnAnalisar = document.getElementById('btnAnalisar');
+  if (btnAnalisar) {
+    btnAnalisar.innerHTML = '<span style="font-size:16px;">✨</span> <b>Analisar e Gerar Orçamento</b>';
+  }
+
+  const btnReanalisar = document.getElementById('btnReanalisarTopo');
+  if (btnReanalisar) {
+    btnReanalisar.innerHTML = '🔄 Reanalisar com IA';
+  }
+
+  const btnRecalcular = document.getElementById('btnRecalcularIA');
+  if (btnRecalcular) {
+    btnRecalcular.innerHTML = '<span>⚡</span> <b>Recalcular com IA</b>';
+  }
+
+  const loaderAjuste = document.getElementById('indicativoRecalculoIA');
+  if (loaderAjuste) {
+    loaderAjuste.style.display = 'none';
+  }
+
+  document.body.style.cursor = 'default';
+}
+
 async function rodarAnaliseIA() {
+  if (isAILoading) {
+    console.warn('Operação com IA já em andamento. Ignorando clique duplicado.');
+    return;
+  }
+
   const descricao = document.getElementById('descricaoServico').value.trim();
   const obsIA = document.getElementById('obsIA').value.trim();
   const categoria = document.getElementById('categoriaPeca')?.value || 'Usinagem Geral';
@@ -1935,10 +1998,18 @@ async function rodarAnaliseIA() {
     return;
   }
 
+  bloquearTelaIA(
+    'Analisando e Gerando Proposta com IA...',
+    'Consultando catálogo de máquinas Nardelli, matérias-primas e calibrando tempos operacionais. Aguarde alguns instantes...'
+  );
+
   const btn = document.getElementById('btnAnalisar');
   if (btn) {
-    btn.disabled = true;
     btn.innerHTML = '<span class="anim-pulse">⚡ Analisando e calculando proposta...</span>';
+  }
+  const btnTopo = document.getElementById('btnReanalisarTopo');
+  if (btnTopo) {
+    btnTopo.innerHTML = '<span class="anim-pulse">⚡ Reanalisando...</span>';
   }
 
   try {
@@ -2072,10 +2143,7 @@ async function rodarAnaliseIA() {
   } catch (err) {
     mostrarErro('Não consegui me conectar à IA agora: ' + err.message);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<span style="font-size:16px;">✨</span> <b>Analisar e Gerar Orçamento</b>';
-    }
+    desbloquearTelaIA();
   }
 }
 
@@ -2083,6 +2151,11 @@ async function rodarAnaliseIA() {
    REFINAMENTO & RECÁLCULO INTERATIVO COM A IA
 =============================================================== */
 async function executarAjusteRecalculoIA() {
+  if (isAILoading) {
+    console.warn('Operação com IA já em andamento. Ignorando clique duplicado.');
+    return;
+  }
+
   const inputEl = document.getElementById('inputAjusteIA');
   const instrucao = inputEl ? inputEl.value.trim() : '';
   if (!instrucao) {
@@ -2091,13 +2164,16 @@ async function executarAjusteRecalculoIA() {
     return;
   }
 
-  const btn = document.getElementById('btnRecalcularIA');
-  const loader = document.getElementById('indicativoRecalculoIA');
+  bloquearTelaIA(
+    'Recalculando Proposta Técnica com IA...',
+    'Aplicando ajustes solicitados em matérias-primas, horas de máquina e recalculando os custos automaticamente...'
+  );
 
+  const btn = document.getElementById('btnRecalcularIA');
   if (btn) {
-    btn.disabled = true;
     btn.innerHTML = '<span class="anim-pulse">⚡ Recalculando com IA...</span>';
   }
+  const loader = document.getElementById('indicativoRecalculoIA');
   if (loader) {
     loader.style.display = 'block';
   }
@@ -2162,13 +2238,7 @@ async function executarAjusteRecalculoIA() {
   } catch (err) {
     mostrarErro('Erro ao recalcular com a IA: ' + err.message);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<span>⚡</span> <b>Recalcular com IA</b>';
-    }
-    if (loader) {
-      loader.style.display = 'none';
-    }
+    desbloquearTelaIA();
   }
 }
 

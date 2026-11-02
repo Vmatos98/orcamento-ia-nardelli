@@ -473,9 +473,14 @@ async function executarAnaliseIA() {
     return;
   }
 
+  if (window.isAILoading) return;
+  window.isAILoading = true;
+
   const btn = document.getElementById('btnGerarPreviaIA');
-  btn.disabled = true;
-  btn.innerHTML = '⚡ Analisando com IA & Claude Sonnet...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⚡ Analisando com IA & Claude Sonnet...';
+  }
 
   const observacoes = document.getElementById('obsIA')?.value.trim() || '';
 
@@ -533,8 +538,11 @@ async function executarAnaliseIA() {
   } catch (err) {
     mostrarToast('❌ Erro na análise com IA: ' + err.message);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '✨ Gerar Prévia com IA (Claude Sonnet)';
+    window.isAILoading = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '✨ Gerar Prévia com IA (Claude Sonnet)';
+    }
   }
 }
 
@@ -542,15 +550,21 @@ async function executarAnaliseIA() {
    REFINAMENTO INTERATIVO DA PRÉVIA COM IA
 =============================================================== */
 async function executarRefinamentoIA() {
+  if (window.isAILoading) return;
+  window.isAILoading = true;
+
   const instrucao = document.getElementById('inputRefinarIA').value.trim();
   if (!instrucao) {
     mostrarToast('Digite o que deseja corrigir (ex: "aumenta 2h de solda").');
+    window.isAILoading = false;
     return;
   }
 
   const btn = document.getElementById('btnRefinarIA');
-  btn.disabled = true;
-  btn.textContent = 'Ajustando...';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Ajustando...';
+  }
 
   coletarOrcamentoDoDOM();
 
@@ -580,8 +594,11 @@ async function executarRefinamentoIA() {
   } catch (err) {
     mostrarToast('Erro ao refinar: ' + err.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '💬 Aplicar Ajuste';
+    window.isAILoading = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '💬 Aplicar Ajuste';
+    }
   }
 }
 
