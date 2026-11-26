@@ -13,14 +13,21 @@ const apiRouter = require('./routes/api');
 const inboundRouter = require('./routes/inbound');
 const { router: authRouter } = require('./routes/auth');
 const webhookSiteRouter = require('./routes/webhookSite');
+const webhookMetaRouter = require('./routes/webhookMeta');
 const dbService = require('./services/dbService');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-// Middleware
+// Middleware (captura rawBody para validação criptográfica X-Hub-Signature-256 da Meta)
+app.set('trust proxy', 1);
 app.use(cors());
-app.use(express.json({ limit: '35mb' }));
+app.use(express.json({
+  limit: '35mb',
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '35mb' }));
 
 // Arquivos estáticos
@@ -30,6 +37,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'data', 'uploads')));
 // Rotas da API
 app.use('/api/auth', authRouter);
 app.use('/api/webhook/site', webhookSiteRouter);
+app.use('/api/webhook/meta', webhookMetaRouter);
+app.use('/webhook/meta', webhookMetaRouter);
+app.use('/api/webhook/whatsapp', webhookMetaRouter);
+app.use('/webhook/whatsapp', webhookMetaRouter);
 app.use('/api/inbound', inboundRouter);
 app.use('/api', apiRouter);
 
@@ -45,7 +56,9 @@ app.listen(PORT, () => {
   console.log(`\n=============================================================`);
   console.log(`🚀 Nardelli Usinagem — Dashboard de Orçamentos com IA Ativo!`);
   console.log(`📍 Servidor rodando em: http://localhost:${PORT}`);
+  console.log(`💬 Webhook Oficial Meta WhatsApp: http://localhost:${PORT}/api/webhook/meta`);
   console.log(`🤖 Entrada Inbound para Chatbot: http://localhost:${PORT}/api/inbound/chatbot`);
+  console.log(`🧪 Simulador JEV Multi-Turnos: http://localhost:${PORT}/api/inbound/simular`);
   console.log(`📑 Documentação da API do Chatbot: http://localhost:${PORT}/api/inbound/docs`);
   console.log(`=============================================================\n`);
 });

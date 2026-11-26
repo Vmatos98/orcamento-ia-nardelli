@@ -423,6 +423,20 @@ const MAQUINAS_INICIAIS = [
     "normal": 20,
     "h50": 30,
     "h100": 40
+  },
+  {
+    "id": "maq_modelagem_3d",
+    "nome": "Engenharia / Modelagem 3D (CAD/CAM)",
+    "categoria": "Engenharia e Projeto CAD",
+    "marca": "Nardelli",
+    "modelo": "CAD/CAM 3D",
+    "ano": 2024,
+    "capacidade": "Levantamento dimensional, desenho técnico 2D e modelagem sólida 3D (STEP/IGES/STL)",
+    "descricao": "Criação de modelo 3D paramétrico e detalhamento técnico a partir de amostra física, croqui ou especificações",
+    "observacoes": "Incluído quando o cliente não possui modelagem 3D pronta",
+    "normal": 35.0,
+    "h50": 52.5,
+    "h100": 70.0
   }
 ];
 
@@ -444,11 +458,30 @@ const CONFIG_PADRAO = {
   modeloRoteador: "google/gemini-2.5-flash",
   modeloGerador: "anthropic/claude-sonnet-5.5",
   modeloEconomico: "qwen/qwen3.8-max-prime",
+  modeloAnaliseAprendizado: process.env.MODELO_ANALISE_APRENDIZADO || "google/gemini-2.5-flash",
   otimizarTokens: true,
-  temperatura: 0.2
+  temperatura: 0.2,
+  // Integração Oficial Meta WhatsApp Business Cloud API & Chatbot JEV
+  metaVerifyToken: process.env.META_VERIFY_TOKEN || "nardelli_meta_verify_2026",
+  metaAccessToken: process.env.META_ACCESS_TOKEN || "",
+  metaPhoneNumberId: process.env.META_PHONE_NUMBER_ID || "",
+  metaAppSecret: process.env.META_APP_SECRET || "",
+  metaApiVersion: process.env.META_API_VERSION || "v24.0",
+  metaAppId: process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID || "",
+  metaConfigId: process.env.META_CONFIG_ID || process.env.NEXT_PUBLIC_META_CONFIG_ID || "",
+  metaWabaId: process.env.META_WABA_ID || "",
+  metaBusinessId: process.env.META_BUSINESS_ID || "",
+  groqApiKey: process.env.GROQ_API_KEY || "",
+  chatbotDebounceMs: Number(process.env.CHATBOT_DEBOUNCE_MS || 6000),
+  chatbotModoSomenteContatosTeste: false,
+  chatbotContatosTeste: [],
+  automatasHubUrl: process.env.AUTOMATAS_HUB_URL || "https://api.automatas.tech",
+  automatasSiteUrl: process.env.AUTOMATAS_SITE_URL || "https://automatas.tech",
+  automatasLoginJwt: process.env.AUTOMATAS_LOGIN_JWT || "",
+  automatasProjectApiKey: process.env.AUTOMATAS_PROJECT_API_KEY || "",
+  automatasWebhookUrl: process.env.AUTOMATAS_WEBHOOK_URL || "",
+  automatasWebhookSecret: process.env.AUTOMATAS_WEBHOOK_SECRET || ""
 };
-
-const { MOCK_CLIENTES, MOCK_ORCAMENTOS, MOCK_CONVERSAS } = require('./seedData');
 
 const SEED_ORCAMENTOS = [];
 const SEED_CONVERSAS = [];
@@ -471,6 +504,7 @@ class DatabaseService {
         orcamentos: [],
         conversas: [],
         clientes: [],
+        licoesAprendidas: [],
         usuarios: [
           {
             id: 1,
@@ -528,9 +562,24 @@ class DatabaseService {
         ];
         alterado = true;
       }
-      if (!db.conversas || db.conversas.length === 0) {
-        db.conversas = SEED_CONVERSAS;
+      if (!Array.isArray(db.conversas)) {
+        db.conversas = [];
         alterado = true;
+      }
+      if (!Array.isArray(db.whatsappAccounts)) {
+        db.whatsappAccounts = [];
+        alterado = true;
+      }
+      if (!Array.isArray(db.licoesAprendidas)) {
+        db.licoesAprendidas = [];
+        alterado = true;
+      }
+      if (Array.isArray(db.maquinas) && !db.maquinas.some(m => m.id === 'maq_modelagem_3d')) {
+        const maq3d = MAQUINAS_INICIAIS.find(m => m.id === 'maq_modelagem_3d');
+        if (maq3d) {
+          db.maquinas.push(maq3d);
+          alterado = true;
+        }
       }
       if (alterado) {
         this.write(db);
@@ -642,8 +691,68 @@ class DatabaseService {
     if (!cfg.openrouterApiKey && process.env.OPENROUTER_API_KEY) {
       cfg.openrouterApiKey = process.env.OPENROUTER_API_KEY;
     }
+    if (!cfg.metaAccessToken && process.env.META_ACCESS_TOKEN) {
+      cfg.metaAccessToken = process.env.META_ACCESS_TOKEN;
+    }
+    if (!cfg.metaPhoneNumberId && process.env.META_PHONE_NUMBER_ID) {
+      cfg.metaPhoneNumberId = process.env.META_PHONE_NUMBER_ID;
+    }
+    if (!cfg.metaAppSecret && process.env.META_APP_SECRET) {
+      cfg.metaAppSecret = process.env.META_APP_SECRET;
+    }
+    if (!cfg.metaVerifyToken && process.env.META_VERIFY_TOKEN) {
+      cfg.metaVerifyToken = process.env.META_VERIFY_TOKEN;
+    }
+    if (!cfg.metaApiVersion && process.env.META_API_VERSION) {
+      cfg.metaApiVersion = process.env.META_API_VERSION;
+    }
+    if (!cfg.metaAppId && (process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID)) {
+      cfg.metaAppId = process.env.META_APP_ID || process.env.NEXT_PUBLIC_META_APP_ID;
+    }
+    if (!cfg.metaConfigId && (process.env.META_CONFIG_ID || process.env.NEXT_PUBLIC_META_CONFIG_ID)) {
+      cfg.metaConfigId = process.env.META_CONFIG_ID || process.env.NEXT_PUBLIC_META_CONFIG_ID;
+    }
+    if (!cfg.groqApiKey && process.env.GROQ_API_KEY) {
+      cfg.groqApiKey = process.env.GROQ_API_KEY;
+    }
+    if (!cfg.automatasHubUrl && process.env.AUTOMATAS_HUB_URL) {
+      cfg.automatasHubUrl = process.env.AUTOMATAS_HUB_URL;
+    }
+    if (!cfg.automatasSiteUrl && process.env.AUTOMATAS_SITE_URL) {
+      cfg.automatasSiteUrl = process.env.AUTOMATAS_SITE_URL;
+    }
+    if (!cfg.automatasLoginJwt && process.env.AUTOMATAS_LOGIN_JWT) {
+      cfg.automatasLoginJwt = process.env.AUTOMATAS_LOGIN_JWT;
+    }
+    if (!cfg.automatasProjectApiKey && process.env.AUTOMATAS_PROJECT_API_KEY) {
+      cfg.automatasProjectApiKey = process.env.AUTOMATAS_PROJECT_API_KEY;
+    }
+    if (!cfg.automatasWebhookUrl && process.env.AUTOMATAS_WEBHOOK_URL) {
+      cfg.automatasWebhookUrl = process.env.AUTOMATAS_WEBHOOK_URL;
+    }
+    if (!cfg.automatasWebhookSecret && process.env.AUTOMATAS_WEBHOOK_SECRET) {
+      cfg.automatasWebhookSecret = process.env.AUTOMATAS_WEBHOOK_SECRET;
+    }
     cfg.usarModeloAprendizagem = this.isModeloAprendizagemAtivo();
     return cfg;
+  }
+
+  getPublicConfig() {
+    const cfg = this.getConfig();
+    const {
+      metaAccessToken: _mat,
+      metaAppSecret: _mas,
+      metaVerifyToken: _mvt,
+      metaPhoneNumberId: _mpn,
+      metaAppId: _mai,
+      metaConfigId: _mci,
+      metaApiVersion: _mav,
+      metaWabaId: _mwi,
+      metaBusinessId: _mbi,
+      automatasWebhookSecret: _aws,
+      ...publicCfg
+    } = cfg;
+    return publicCfg;
   }
 
   saveConfig(newConfig) {
@@ -845,6 +954,9 @@ class DatabaseService {
     if (!orcamento.versaoOriginalIA && existingOrc?.versaoOriginalIA) {
       orcamento.versaoOriginalIA = existingOrc.versaoOriginalIA;
     }
+    if (!orcamento.resumoAprendizadoIA && existingOrc?.resumoAprendizadoIA) {
+      orcamento.resumoAprendizadoIA = existingOrc.resumoAprendizadoIA;
+    }
 
     // Se temos a versão gerada pela IA, detectamos automaticamente o que o humano alterou
     if (orcamento.versaoOriginalIA) {
@@ -884,6 +996,18 @@ class DatabaseService {
   }
 
   /**
+   * Formata horas decimais para texto legível em horas e minutos (ex: 1.5 -> "1h 30min")
+   */
+  formatarHorasMinutos(dec) {
+    const totalMin = Math.max(0, Math.round((Number(dec) || 0) * 60));
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}min`;
+    if (h > 0) return `${h}h`;
+    return `${m}min`;
+  }
+
+  /**
    * Compara o que a IA gerou originalmente vs o que o orçamentista humano salvou
    */
   calcularAjustesHumanos(originalIA, atual) {
@@ -895,7 +1019,7 @@ class DatabaseService {
 
     const diferencas = [];
 
-    // 1. Modificações em máquinas e tempos
+    // 1. Modificações em máquinas, tempos e regimes
     for (const m of maqAtual) {
       const nomeM = (m.nome || m.maquina || '').toLowerCase().trim();
       const orig = maqOrig.find(o => {
@@ -903,12 +1027,21 @@ class DatabaseService {
         return nomeO === nomeM || (nomeO && nomeM && (nomeO.includes(nomeM) || nomeM.includes(nomeO)));
       });
 
+      const hAtual = Number(m.horas || 0);
       if (!orig) {
-        diferencas.push(`Adicionou máquina: ${m.nome || m.maquina} (${m.horas || 0}h)`);
-      } else if (Number(orig.horas || 0) !== Number(m.horas || 0)) {
-        const delta = (Number(m.horas || 0) - Number(orig.horas || 0)).toFixed(1);
-        const sinal = delta > 0 ? `+${delta}` : delta;
-        diferencas.push(`${m.nome || m.maquina}: calibrado de ${orig.horas}h para ${m.horas}h (${sinal}h)`);
+        diferencas.push(`Adicionou máquina: ${m.nome || m.maquina} (${this.formatarHorasMinutos(hAtual)})`);
+      } else {
+        const hOrig = Number(orig.horas || 0);
+        if (Math.abs(hOrig - hAtual) >= 0.01) {
+          const delta = Number((hAtual - hOrig).toFixed(2));
+          const sinal = delta > 0 ? `+${this.formatarHorasMinutos(delta)}` : `-${this.formatarHorasMinutos(Math.abs(delta))}`;
+          diferencas.push(`${m.nome || m.maquina}: tempo calibrado de ${this.formatarHorasMinutos(hOrig)} para ${this.formatarHorasMinutos(hAtual)} (${sinal})`);
+        }
+        const regOrig = orig.regime || 'normal';
+        const regAtual = m.regime || 'normal';
+        if (regOrig !== regAtual) {
+          diferencas.push(`${m.nome || m.maquina}: regime alterado de ${regOrig} para ${regAtual}`);
+        }
       }
     }
 
@@ -919,18 +1052,26 @@ class DatabaseService {
         return nomeM === nomeO || (nomeO && nomeM && (nomeM.includes(nomeO) || nomeO.includes(nomeM)));
       });
       if (!aindaExiste) {
-        diferencas.push(`Removeu máquina sugerida: ${orig.nome || orig.maquina}`);
+        diferencas.push(`Removeu máquina sugerida: ${orig.nome || orig.maquina} (${this.formatarHorasMinutos(orig.horas || 0)})`);
       }
     }
 
-    // 2. Modificações em insumos
+    // 2. Modificações em insumos (qtd total, qtd por peça e preço unitário)
     for (const i of insAtual) {
       const nomeI = (i.nome || '').toLowerCase().trim();
       const orig = insOrig.find(o => (o.nome || '').toLowerCase().trim() === nomeI);
       if (!orig) {
         diferencas.push(`Adicionou insumo: ${i.nome} (${i.qtd} ${i.unidade || ''})`);
-      } else if (Number(orig.qtd || 0) !== Number(i.qtd || 0)) {
-        diferencas.push(`${i.nome}: quantidade ajustada de ${orig.qtd} para ${i.qtd}`);
+      } else {
+        if (Math.abs(Number(orig.qtd || 0) - Number(i.qtd || 0)) > 0.001) {
+          diferencas.push(`${i.nome}: quantidade total ajustada de ${orig.qtd} para ${i.qtd} ${i.unidade || ''}`);
+        }
+        if (orig.qtdPorPeca !== undefined && i.qtdPorPeca !== undefined && Math.abs(Number(orig.qtdPorPeca || 0) - Number(i.qtdPorPeca || 0)) > 0.001) {
+          diferencas.push(`${i.nome}: consumo por peça ajustado de ${orig.qtdPorPeca} para ${i.qtdPorPeca} ${i.unidade || ''}`);
+        }
+        if (Math.abs(Number(orig.preco || 0) - Number(i.preco || 0)) > 0.01) {
+          diferencas.push(`${i.nome}: preço unitário ajustado de R$ ${Number(orig.preco || 0).toFixed(2)} para R$ ${Number(i.preco || 0).toFixed(2)}`);
+        }
       }
     }
 
@@ -942,11 +1083,32 @@ class DatabaseService {
       }
     }
 
+    // 3. Mão de obra de escritório, Modelagem 3D e Margens personalizadas
+    const moOrig = Number(originalIA.moEscritorio || 0);
+    const moAtual = Number(atual.moEscritorio || 0);
+    if (Math.abs(moOrig - moAtual) >= 0.01) {
+      diferencas.push(`Mão de obra de escritório ajustada de R$ ${moOrig.toFixed(2)} para R$ ${moAtual.toFixed(2)}`);
+    }
+
+    if (originalIA.incluirModelagem3D !== undefined && atual.incluirModelagem3D !== undefined && Boolean(originalIA.incluirModelagem3D) !== Boolean(atual.incluirModelagem3D)) {
+      diferencas.push(`Modelagem 3D alterada para: ${atual.incluirModelagem3D ? 'Incluída' : 'Não incluída'}`);
+    }
+
+    if (atual.margensPersonalizadas && atual.margensPersonalizadas.ativa) {
+      const mp = atual.margensPersonalizadas;
+      diferencas.push(`Margens comerciais personalizadas: Lucro Insumo ${(Number(mp.lucroInsumo || 0) * 100).toFixed(1)}%, Lucro MO ${(Number(mp.lucroMO || 0) * 100).toFixed(1)}%, Desc ${(Number(mp.margemDesconto || 0) * 100).toFixed(1)}%`);
+    }
+
+    const totalOrig = Number(originalIA.totais?.totalFinal || 0);
+    const totalAtual = Number(atual.totais?.totalFinal || 0);
+    const deltaTotalFinanceiro = Number((totalAtual - totalOrig).toFixed(2));
+
     if (diferencas.length === 0) {
       return {
         houveAjustes: false,
         totalModificacoes: 0,
         itensModificados: [],
+        deltaTotalFinanceiro,
         resumo: 'Aprovado sem alterações na prévia da IA.'
       };
     }
@@ -955,8 +1117,110 @@ class DatabaseService {
       houveAjustes: true,
       totalModificacoes: diferencas.length,
       itensModificados: diferencas,
+      deltaTotalFinanceiro,
       resumo: diferencas.slice(0, 3).join('; ') + (diferencas.length > 3 ? ` (+${diferencas.length - 3} alterações)` : '')
     };
+  }
+
+  /**
+   * Salva o resumo de lição aprendida gerado pelo modelo econômico ao comparar V1 vs Aprovado
+   */
+  async salvarLicaoAprendida(orcamentoId, licao) {
+    const db = this.read();
+    if (!Array.isArray(db.licoesAprendidas)) db.licoesAprendidas = [];
+    if (!Array.isArray(db.orcamentos)) db.orcamentos = [];
+
+    const idxOrc = db.orcamentos.findIndex(o => o.id === orcamentoId);
+    let orcAlvo = idxOrc >= 0 ? db.orcamentos[idxOrc] : null;
+    if (!orcAlvo && postgresService.isConnected()) {
+      orcAlvo = await postgresService.buscarOrcamentoPorId(orcamentoId);
+    }
+
+    if (orcAlvo) {
+      orcAlvo.resumoAprendizadoIA = licao;
+      orcAlvo.dataAtualizacao = new Date().toISOString();
+      if (idxOrc >= 0) {
+        db.orcamentos[idxOrc] = orcAlvo;
+      }
+      if (postgresService.isConnected()) {
+        try {
+          await postgresService.salvarOrcamento(orcAlvo);
+        } catch (errPg) {
+          console.warn('Erro ao salvar resumoAprendizadoIA no Postgres:', errPg.message);
+        }
+      }
+    }
+
+    const entradaLicao = {
+      orcamentoId,
+      numero: licao.numero || orcAlvo?.numero || '',
+      descricao: licao.descricao || orcAlvo?.descricaoServico || '',
+      categoria: licao.categoria || orcAlvo?.categoriaPeca || '',
+      material: licao.material || orcAlvo?.materialDefinido || orcAlvo?.materialPeca || '',
+      resumoExecutivo: licao.resumoExecutivo || '',
+      padroesErro: Array.isArray(licao.padroesErro) ? licao.padroesErro : [],
+      regrasParaFuturo: Array.isArray(licao.regrasParaFuturo) ? licao.regrasParaFuturo : [],
+      categoriaAprendizado: licao.categoriaAprendizado || 'GERAL',
+      modeloUsado: licao.modeloUsado || 'google/gemini-2.5-flash',
+      geradoEm: licao.geradoEm || new Date().toISOString()
+    };
+
+    db.licoesAprendidas = [
+      entradaLicao,
+      ...db.licoesAprendidas.filter(l => l.orcamentoId !== orcamentoId)
+    ].slice(0, 30);
+
+    this.write(db);
+
+    if (postgresService.isConnected()) {
+      try {
+        await postgresService.setConfiguracaoChave('licoes_aprendidas', db.licoesAprendidas);
+      } catch (errPg) {
+        console.warn('Erro ao salvar licoes_aprendidas no Postgres:', errPg.message);
+      }
+    }
+
+    return entradaLicao;
+  }
+
+  /**
+   * Retorna as lições aprendidas recentes para orientar futuras gerações de orçamento
+   */
+  async getLicoesAprendidas(limite = 8) {
+    if (!this.isModeloAprendizagemAtivo()) {
+      return [];
+    }
+
+    let lista = [];
+    if (postgresService.isConnected()) {
+      try {
+        const pgLicoes = await postgresService.getConfiguracaoChave('licoes_aprendidas');
+        if (Array.isArray(pgLicoes) && pgLicoes.length > 0) {
+          lista = pgLicoes;
+        }
+      } catch (e) {}
+    }
+
+    if (lista.length === 0) {
+      const db = this.read();
+      if (Array.isArray(db.licoesAprendidas) && db.licoesAprendidas.length > 0) {
+        lista = db.licoesAprendidas;
+      } else {
+        const orcs = await this.getOrcamentos();
+        lista = orcs
+          .filter(o => o.resumoAprendizadoIA && o.resumoAprendizadoIA.resumoExecutivo)
+          .map(o => ({
+            orcamentoId: o.id,
+            numero: o.numero,
+            descricao: o.descricaoServico || '',
+            categoria: o.categoriaPeca || '',
+            material: o.materialDefinido || o.materialPeca || '',
+            ...o.resumoAprendizadoIA
+          }));
+      }
+    }
+
+    return lista.slice(0, limite);
   }
 
   /**
@@ -990,10 +1254,12 @@ class DatabaseService {
       material: o.materialPeca || o.materialDefinido || '',
       tratamentoTermico: o.tratamentoTermico || 'Nenhum',
       quantidade: o.quantidadePecas || 1,
-      maquinas: (o.itensMaquina || []).map(m => `${m.nome || m.maquina} (${m.horas}h)`),
+      maquinas: (o.itensMaquina || []).map(m => `${m.nome || m.maquina} (${this.formatarHorasMinutos(m.horas)})`),
       insumos: (o.itensInsumo || []).map(i => `${i.nome} (${i.qtd} ${i.unidade || ''})`),
       totalHoras: (o.itensMaquina || []).reduce((acc, m) => acc + (Number(m.horas) || 0), 0),
-      ajustesHumano: o.ajustesHumano?.resumo || (o.ajustadoManualmente ? 'Calibrado manualmente por engenheiro' : 'Aprovado direto')
+      ajustesHumano: o.ajustesHumano?.resumo || (o.ajustadoManualmente ? 'Calibrado manualmente por engenheiro' : 'Aprovado direto'),
+      resumoAprendizadoIA: o.resumoAprendizadoIA?.resumoExecutivo || null,
+      regrasParaFuturo: Array.isArray(o.resumoAprendizadoIA?.regrasParaFuturo) ? o.resumoAprendizadoIA.regrasParaFuturo : []
     }));
   }
 
@@ -1031,6 +1297,26 @@ class DatabaseService {
     return (db.conversas || []).find(c => c.id === id) || null;
   }
 
+  async getConversaByTelefone(telefone) {
+    const digits = String(telefone || '').replace(/\D/g, '');
+    if (!digits) return null;
+
+    if (postgresService.isConnected()) {
+      const convPg = await postgresService.buscarConversaPorTelefone(digits);
+      if (convPg) return convPg;
+    }
+
+    const db = this.read();
+    const suffix = digits.length >= 8 ? digits.slice(-8) : digits;
+    const matches = (db.conversas || []).filter(c => {
+      const cDigits = String(c.cliente?.telefone || '').replace(/\D/g, '');
+      return cDigits === digits || (suffix.length >= 8 && cDigits.endsWith(suffix));
+    });
+    if (matches.length === 0) return null;
+    matches.sort((a, b) => new Date(b.dataAtualizacao || 0) - new Date(a.dataAtualizacao || 0));
+    return matches[0];
+  }
+
   async saveConversa(conversa) {
     const db = this.read();
     if (!db.conversas) db.conversas = [];
@@ -1066,12 +1352,195 @@ class DatabaseService {
   }
 
   async deleteConversa(id) {
+    if (postgresService.isConnected()) {
+      try {
+        await postgresService.deletarConversa(id);
+      } catch (errPg) {
+        console.warn('Erro ao remover conversa no Postgres:', errPg.message);
+      }
+    }
     const db = this.read();
     if (!db.conversas) return false;
     const initialLen = db.conversas.length;
     db.conversas = db.conversas.filter(c => c.id !== id);
     this.write(db);
     return db.conversas.length < initialLen;
+  }
+
+  async clearConversas() {
+    if (postgresService.isConnected()) {
+      try {
+        await postgresService.limparConversas();
+      } catch (errPg) {
+        console.warn('Erro ao limpar conversas no Postgres:', errPg.message);
+      }
+    }
+    const db = this.read();
+    db.conversas = [];
+    this.write(db);
+    return true;
+  }
+
+  // ===================== CONTAS WHATSAPP META / FACEBOOK =====================
+  getWhatsappAccounts() {
+    const db = this.read();
+    return Array.isArray(db.whatsappAccounts) ? db.whatsappAccounts : [];
+  }
+
+  getWhatsappAccountToken(phoneNumberId) {
+    if (!phoneNumberId) return '';
+    const acc = this.getWhatsappAccounts().find(a => String(a.phoneNumberId) === String(phoneNumberId));
+    return acc?.accessToken || '';
+  }
+
+  upsertWhatsappAccount(accountData) {
+    if (!accountData || !accountData.phoneNumberId) return null;
+    const db = this.read();
+    if (!Array.isArray(db.whatsappAccounts)) db.whatsappAccounts = [];
+    const pid = String(accountData.phoneNumberId).trim();
+    const now = new Date().toISOString();
+    const idx = db.whatsappAccounts.findIndex(a => String(a.phoneNumberId) === pid);
+    const existing = idx >= 0 ? db.whatsappAccounts[idx] : {};
+
+    const merged = {
+      ...existing,
+      ...accountData,
+      phoneNumberId: pid,
+      accessToken: accountData.accessToken ? String(accountData.accessToken).trim() : (existing.accessToken || ''),
+      connectedAt: existing.connectedAt || accountData.connectedAt || now,
+      updatedAt: now
+    };
+
+    if (idx >= 0) {
+      db.whatsappAccounts[idx] = merged;
+    } else {
+      db.whatsappAccounts.unshift(merged);
+    }
+
+    this.write(db);
+    return merged;
+  }
+
+  deleteWhatsappAccount(phoneNumberId) {
+    const pid = String(phoneNumberId || '').trim();
+    if (!pid) return false;
+    const db = this.read();
+    const list = Array.isArray(db.whatsappAccounts) ? db.whatsappAccounts : [];
+    const next = list.filter(a => String(a.phoneNumberId) !== pid);
+    if (next.length === list.length) return false;
+    db.whatsappAccounts = next;
+    if (db.config && String(db.config.metaPhoneNumberId) === pid) {
+      const fallback = next[0] || null;
+      db.config.metaPhoneNumberId = fallback ? fallback.phoneNumberId : '';
+      db.config.metaWabaId = fallback ? (fallback.wabaId || '') : '';
+      db.config.metaBusinessId = fallback ? (fallback.businessId || '') : '';
+    }
+    this.write(db);
+    return true;
+  }
+
+  // ===================== LISTA DE CONTATOS DE TESTE DO CHATBOT =====================
+  gerarVariantesTelefone(raw) {
+    const digits = String(raw || '').replace(/\D/g, '');
+    const set = new Set();
+    if (!digits || digits.length < 8) return set;
+    set.add(digits);
+
+    let com55 = digits;
+    if (digits.length === 10 || digits.length === 11) {
+      com55 = '55' + digits;
+      set.add(com55);
+    }
+
+    if (com55.startsWith('55') && com55.length >= 12 && com55.length <= 13) {
+      const ddd = com55.slice(2, 4);
+      const local = com55.slice(4);
+      if (local.length === 8) {
+        set.add(`55${ddd}${local}`);
+        set.add(`55${ddd}9${local}`);
+        set.add(`${ddd}${local}`);
+        set.add(`${ddd}9${local}`);
+      } else if (local.length === 9 && local.startsWith('9')) {
+        const sem9 = local.slice(1);
+        set.add(`55${ddd}${local}`);
+        set.add(`55${ddd}${sem9}`);
+        set.add(`${ddd}${local}`);
+        set.add(`${ddd}${sem9}`);
+      }
+    }
+
+    return set;
+  }
+
+  getContatosTesteChatbot() {
+    const cfg = this.getConfig();
+    return {
+      modoSomenteTestes: Boolean(cfg.chatbotModoSomenteContatosTeste),
+      contatos: Array.isArray(cfg.chatbotContatosTeste) ? cfg.chatbotContatosTeste : []
+    };
+  }
+
+  isContatoPermitidoChatbot(telefone) {
+    const { modoSomenteTestes, contatos } = this.getContatosTesteChatbot();
+    if (!modoSomenteTestes) {
+      return { permitido: true, modoSomenteTestes: false, contato: null };
+    }
+    const incomingVars = this.gerarVariantesTelefone(telefone);
+    if (incomingVars.size === 0) {
+      return { permitido: false, modoSomenteTestes: true, contato: null };
+    }
+    for (const item of contatos) {
+      const itemVars = this.gerarVariantesTelefone(item.telefone || item.numero || '');
+      for (const v of incomingVars) {
+        if (itemVars.has(v)) {
+          return { permitido: true, modoSomenteTestes: true, contato: item };
+        }
+      }
+    }
+    return { permitido: false, modoSomenteTestes: true, contato: null };
+  }
+
+  addContatoTesteChatbot({ nome = '', telefone = '' }) {
+    const digits = String(telefone || '').replace(/\D/g, '');
+    if (digits.length < 8) {
+      throw new Error('Informe um número de telefone válido com DDD (mínimo 8 dígitos).');
+    }
+    const atual = this.getContatosTesteChatbot();
+    const novasVars = this.gerarVariantesTelefone(digits);
+    const jaExiste = atual.contatos.some(c => {
+      const vars = this.gerarVariantesTelefone(c.telefone);
+      for (const v of novasVars) {
+        if (vars.has(v)) return true;
+      }
+      return false;
+    });
+    if (jaExiste) {
+      throw new Error('Este número já está na lista de contatos de teste.');
+    }
+    const novo = {
+      id: 'ct_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      nome: String(nome || '').trim() || `Contato Teste`,
+      telefone: digits.length <= 11 && !digits.startsWith('55') ? '55' + digits : digits,
+      criadoEm: new Date().toISOString()
+    };
+    const novaLista = [...atual.contatos, novo];
+    this.saveConfig({
+      chatbotContatosTeste: novaLista,
+      chatbotModoSomenteContatosTeste: true
+    });
+    return this.getContatosTesteChatbot();
+  }
+
+  removeContatoTesteChatbot(id) {
+    const atual = this.getContatosTesteChatbot();
+    const novaLista = atual.contatos.filter(c => c.id !== id);
+    this.saveConfig({ chatbotContatosTeste: novaLista });
+    return this.getContatosTesteChatbot();
+  }
+
+  setModoTesteChatbot(ativo) {
+    this.saveConfig({ chatbotModoSomenteContatosTeste: Boolean(ativo) });
+    return this.getContatosTesteChatbot();
   }
 }
 

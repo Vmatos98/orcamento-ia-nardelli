@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const dbService = require('../services/dbService');
 const aiService = require('../services/aiService');
+const chatbotService = require('../services/chatbotService');
+const metaWhatsappService = require('../services/metaWhatsappService');
 
 /**
  * ROTA DE ENTRADA DO CHATBOT (INBOUND WEBHOOK)
@@ -28,6 +30,11 @@ router.post('/chatbot', async (req, res) => {
       prazoSolicitado,
       quantidade = 1,
       unidade = 'PÇ',
+      material = '',
+      tratamentoTermico = 'Nenhum',
+      possuiModelagem3D = false,
+      incluirModelagem3D = false,
+      detalhesModelagem3D = '',
       conversaId
     } = req.body;
 
@@ -60,6 +67,11 @@ router.post('/chatbot', async (req, res) => {
       descricaoServico: descricao,
       quantidadePecas: qtdFinal,
       unidadePeca: unidFinal,
+      materialPeca: material || '',
+      tratamentoTermico: tratamentoTermico || 'Nenhum',
+      possuiModelagem3D: !!possuiModelagem3D,
+      incluirModelagem3D: !!incluirModelagem3D,
+      detalhesModelagem3D: detalhesModelagem3D || '',
       observacoes: observacoes ? `${observacoes}${prazoSolicitado ? ` | Prazo desejado: ${prazoSolicitado}` : ''}` : (prazoSolicitado ? `Prazo desejado: ${prazoSolicitado}` : ''),
       arquivos: arquivos.map((a, idx) => ({
         id: 'arq_' + idx,
@@ -93,7 +105,14 @@ router.post('/chatbot', async (req, res) => {
         const resultadoIA = await aiService.gerarPreviaOrcamento({
           descricao,
           observacoes: novoOrcamento.observacoes,
-          arquivos: novoOrcamento.arquivos
+          arquivos: novoOrcamento.arquivos,
+          quantidade: qtdFinal,
+          prazo: prazoSolicitado || '',
+          material,
+          tratamentoTermico,
+          possuiModelagem3D: !!possuiModelagem3D,
+          incluirModelagem3D: !!incluirModelagem3D,
+          detalhesModelagem3D: detalhesModelagem3D || ''
         });
 
         if (resultadoIA && resultadoIA.sucesso) {
@@ -279,6 +298,24 @@ router.get('/conversas/:id', async (req, res) => {
   }
 });
 
+router.delete('/conversas/:id', async (req, res) => {
+  try {
+    const ok = await dbService.deleteConversa(req.params.id);
+    res.json({ sucesso: true, removido: ok });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.delete('/conversas', async (req, res) => {
+  try {
+    await dbService.clearConversas();
+    res.json({ sucesso: true });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
 router.post('/conversas/:id/mensagem', async (req, res) => {
   try {
     const { texto, remetente = 'cliente', viaWhatsAppWeb = false } = req.body;
@@ -311,14 +348,32 @@ router.post('/conversas/:id/mensagem', async (req, res) => {
     conversa.mensagens.push(novaMsg);
 
     // Se foi o cliente falando, atualiza a janela de 24h e o histórico do pedido
+    let envioMeta = null;
     if (remetente === 'cliente') {
       conversa.ultimaMensagemClienteEm = new Date().toISOString();
       conversa.descricaoServico = (conversa.descricaoServico ? conversa.descricaoServico + ' ' : '') + texto;
+    } else if (remetente === 'atendente') {
+      // Atendente humano assumiu pelo painel -> pausa IA e dispara pela Meta Cloud API se dentro da janela de 24h
+      conversa.aiEnabled = false;
+      conversa.lastHumanInteraction = new Date().toISOString();
+      if (!viaWhatsAppWeb && (conversa.waId || conversa.cliente?.telefone)) {
+        try {
+          envioMeta = await metaWhatsappService.sendTextMessage({
+            to: conversa.waId || conversa.cliente.telefone,
+            text: texto,
+            phoneNumberId: conversa.phoneNumberId
+          });
+        } catch (errMeta) {
+          console.warn('[Inbound] Aviso ao enviar resposta do atendente via Meta API:', errMeta.message);
+          envioMeta = { sucesso: false, erro: errMeta.message };
+        }
+      }
     }
 
     const salva = await dbService.saveConversa(conversa);
     res.json({
       sucesso: true,
+      envioMeta,
       conversa: {
         ...salva,
         janelaMeta: avaliarJanelaMeta24h(salva)
@@ -329,14 +384,96 @@ router.post('/conversas/:id/mensagem', async (req, res) => {
   }
 });
 
+/**
+ * Pausar ou reativar a IA em uma conversa específica
+ */
+router.post('/conversas/:id/toggle-ia', async (req, res) => {
+  try {
+    const conversa = await dbService.getConversaById(req.params.id);
+    if (!conversa) return res.status(404).json({ sucesso: false, erro: 'Conversa não encontrada' });
+
+    const novoEstado = req.body.aiEnabled !== undefined ? Boolean(req.body.aiEnabled) : !(conversa.aiEnabled !== false);
+    conversa.aiEnabled = novoEstado;
+    if (!novoEstado) {
+      conversa.lastHumanInteraction = new Date().toISOString();
+      conversa.status = 'atendimento_humano';
+    } else if (conversa.status === 'atendimento_humano' || conversa.status === 'falha_ia_atendimento_humano') {
+      conversa.status = conversa.orcamentoId ? 'orcamento_gerado' : 'coletando_dados';
+    }
+
+    const salva = await dbService.saveConversa(conversa);
+    res.json({
+      sucesso: true,
+      aiEnabled: salva.aiEnabled,
+      conversa: {
+        ...salva,
+        janelaMeta: avaliarJanelaMeta24h(salva)
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+/**
+ * Simulador Interativo Multi-Turnos do Chatbot JEV (mesmo motor da Meta Cloud API, sem envio externo)
+ */
+router.post('/simular', async (req, res) => {
+  try {
+    const {
+      telefone = '5579999990001',
+      nome = 'Cliente Simulador',
+      mensagem = '',
+      tipoMidia = 'text'
+    } = req.body;
+
+    if (!String(mensagem || '').trim()) {
+      return res.status(400).json({ sucesso: false, erro: 'Envie uma mensagem para simular.' });
+    }
+
+    const resultado = await chatbotService.processarLote(
+      telefone,
+      [
+        {
+          phone: telefone,
+          senderName: nome,
+          messageType: tipoMidia,
+          content: String(mensagem).trim(),
+          hasVisualMedia: false
+        }
+      ],
+      { enviarViaMeta: false, modoSimulador: true }
+    );
+
+    res.json({
+      sucesso: true,
+      respostaBot: resultado?.respostaBot || '',
+      jev: resultado?.jev || null,
+      orcamentoGerado: resultado?.orcamentoGerado
+        ? {
+            id: resultado.orcamentoGerado.id,
+            numero: resultado.orcamentoGerado.numero,
+            totalEstimado: resultado.orcamentoGerado.totais?.totalFinal || 0
+          }
+        : null,
+      conversa: resultado?.conversa || null
+    });
+  } catch (e) {
+    console.error('[Simulador JEV] Erro:', e);
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
 router.post('/conversas/:id/gerar-orcamento', async (req, res) => {
   try {
     const conversa = await dbService.getConversaById(req.params.id);
     if (!conversa) return res.status(404).json({ sucesso: false, erro: 'Conversa não encontrada' });
 
-    // Cria o orçamento com base no histórico da conversa
+    // Cria o orçamento com base no histórico da conversa e dados coletados pelo JEV
     const descricoes = conversa.mensagens.filter(m => m.remetente === 'cliente').map(m => m.texto).join('. ');
     const config = dbService.getConfig();
+    const dc = conversa.jevState?.dadosColetados || {};
+    const qtdFinal = Math.max(1, Number(dc.quantidade) || 1);
 
     const novoOrcamento = {
       id: 'orc_' + Date.now().toString(36),
@@ -345,19 +482,25 @@ router.post('/conversas/:id/gerar-orcamento', async (req, res) => {
       status: 'PENDENTE_REVISAO',
       dataCriacao: new Date().toISOString(),
       cliente: {
-        nome: conversa.cliente?.nome || 'Cliente WhatsApp',
+        nome: dc.empresa ? `${dc.empresa}${dc.nome_cliente ? ` (${dc.nome_cliente})` : ''}` : (dc.nome_cliente || conversa.cliente?.nome || 'Cliente WhatsApp'),
         tel: conversa.cliente?.telefone || '',
         email: '',
-        endereco: 'Aracaju/SE',
-        contato: conversa.cliente?.nome || ''
+        endereco: dc.endereco_frete || 'Aracaju/SE',
+        contato: dc.nome_cliente || conversa.cliente?.nome || ''
       },
-      descricaoServico: conversa.descricaoServico || descricoes,
+      descricaoServico: conversa.jevState?.resumoTecnico || conversa.descricaoServico || descricoes,
+      quantidadePecas: qtdFinal,
+      unidadePeca: (dc.unidade || 'PÇ').toUpperCase(),
+      materialPeca: dc.material || '',
+      tratamentoTermico: dc.tratamento_termico || 'Nenhum',
+      possuiModelagem3D: dc.possui_modelagem_3d === true,
+      incluirModelagem3D: dc.incluir_modelagem_3d === true,
       observacoes: `Gerado a partir da conversa WhatsApp (${conversa.id})`,
-      arquivos: [],
+      arquivos: conversa.arquivos || [],
       itensInsumo: [],
       itensMaquina: [],
       moEscritorio: 40.0,
-      frete: { distKm: 0, viagens: 1, pecas: 1, valorTotal: 0 },
+      frete: { distKm: 0, viagens: 1, pecas: qtdFinal, valorTotal: 0 },
       parcelamento: { prazoMeses: 0 },
       totais: {}
     };
@@ -366,7 +509,12 @@ router.post('/conversas/:id/gerar-orcamento', async (req, res) => {
     const resIA = await aiService.gerarPreviaOrcamento({
       descricao: novoOrcamento.descricaoServico,
       observacoes: novoOrcamento.observacoes,
-      arquivos: []
+      arquivos: novoOrcamento.arquivos,
+      quantidade: qtdFinal,
+      material: dc.material || '',
+      tratamentoTermico: dc.tratamento_termico || 'Nenhum',
+      possuiModelagem3D: dc.possui_modelagem_3d === true,
+      incluirModelagem3D: dc.incluir_modelagem_3d === true
     });
 
     if (resIA && resIA.sucesso) {
@@ -483,11 +631,18 @@ function calcularTotaisOrcamento(orc, cfg) {
   const moEscritorio = num(orc.moEscritorio);
   const totalMO = totalMaquina + moEscritorio;
 
-  const mcInsumo = num(cfg.despFixasInsumo) + num(cfg.impostoInsumo) + num(cfg.lucroInsumo);
+  const mp = (orc.margensPersonalizadas && orc.margensPersonalizadas.ativa) ? orc.margensPersonalizadas : {};
+  const despFixasInsumo = mp.despFixasInsumo !== undefined ? num(mp.despFixasInsumo) : num(cfg.despFixasInsumo);
+  const impostoInsumo = mp.impostoInsumo !== undefined ? num(mp.impostoInsumo) : num(cfg.impostoInsumo);
+  const lucroInsumo = mp.lucroInsumo !== undefined ? num(mp.lucroInsumo) : num(cfg.lucroInsumo);
+  const mcInsumo = despFixasInsumo + impostoInsumo + lucroInsumo;
   const taxaInsumo = 1 - mcInsumo;
   const valorInsumoComMargem = taxaInsumo > 0 ? (totalInsumos / taxaInsumo) : totalInsumos;
 
-  const mcMO = num(cfg.despFixasMO) + num(cfg.impostoMO) + num(cfg.lucroMO);
+  const despFixasMO = mp.despFixasMO !== undefined ? num(mp.despFixasMO) : num(cfg.despFixasMO);
+  const impostoMO = mp.impostoMO !== undefined ? num(mp.impostoMO) : num(cfg.impostoMO);
+  const lucroMO = mp.lucroMO !== undefined ? num(mp.lucroMO) : num(cfg.lucroMO);
+  const mcMO = despFixasMO + impostoMO + lucroMO;
   const taxaMO = 1 - mcMO;
   const valorMOComMargem = taxaMO > 0 ? (totalMO / taxaMO) : totalMO;
 
@@ -497,10 +652,12 @@ function calcularTotaisOrcamento(orc, cfg) {
   const freteTotal = (distKm * num(cfg.custoKm) * 2 * viagens) / pecas;
 
   const semDesconto = valorInsumoComMargem + valorMOComMargem + freteTotal;
-  const comDesconto = semDesconto * (1 + num(cfg.margemDesconto));
+  const margemDesc = mp.margemDesconto !== undefined ? num(mp.margemDesconto) : num(cfg.margemDesconto);
+  const comDesconto = semDesconto * (1 + margemDesc);
 
   const prazoMeses = num(orc.parcelamento?.prazoMeses);
-  const taxaJuros = prazoMeses * num(cfg.jurosMensal);
+  const jurosMensal = mp.jurosMensal !== undefined ? num(mp.jurosMensal) : num(cfg.jurosMensal);
+  const taxaJuros = prazoMeses * jurosMensal;
   const precoAPrazo = comDesconto * (1 + taxaJuros);
 
   const totalFinal = prazoMeses > 0 ? precoAPrazo : comDesconto;

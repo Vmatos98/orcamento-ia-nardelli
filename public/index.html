@@ -278,6 +278,29 @@
               </label>
             </div>
 
+            <!-- Bloco: Modelagem 3D / Projeto CAD -->
+            <div class="modelagem3d-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                <label class="field" style="flex:1; min-width:220px;">
+                  <span>🧊 Modelagem 3D / Desenho CAD</span>
+                  <select id="possuiModelagem3D" onchange="aoAlterarPossuiModelagem3D(this.value)">
+                    <option value="nao" selected>Não possui modelagem 3D</option>
+                    <option value="sim">Sim — Cliente já fornece o arquivo 3D</option>
+                  </select>
+                </label>
+                <span id="badgePossuiModelagem3D" class="badge" style="display:none; background:#DCFCE7; color:#15803D; border:1px solid #86EFAC; font-size:10px; padding:4px 9px;">
+                  ✓ Modelagem 3D fornecida pelo cliente
+                </span>
+              </div>
+              <div id="blocoIncluirModelagem3D" class="modelagem3d-incluir-wrap">
+                <label class="modelagem3d-check-label">
+                  <input type="checkbox" id="incluirModelagem3D">
+                  <span>Incluir serviço de Modelagem 3D / Projeto CAD na geração do orçamento</span>
+                </label>
+                <input id="detalhesModelagem3D" placeholder="Detalhes do 3D (opcional): ex. levantamento dimensional da amostra física, gerar STEP/2D..." style="font-size:12px;">
+              </div>
+            </div>
+
             <!-- Bloco Especial: Tratamento Térmico & Dureza Retrátil -->
             <div id="painelTermicoCard" class="painel-termico-card">
               <div class="painel-termico-header" onclick="togglePainelTermico()">
@@ -480,6 +503,26 @@
         </div>
       </div>
 
+      <!-- Banner de Resumo de Aprendizado Pós-Aprovação (Modelo Econômico: V1 vs Aprovado) -->
+      <div id="iaLicaoAprendidaBox" class="licao-aprendida-card no-print" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div style="flex:1; min-width:260px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-weight:700; font-size:10px;">
+                🧠 LIÇÃO APRENDIDA (V1 vs. APROVADO)
+              </span>
+              <span id="iaLicaoCategoria" class="badge" style="background:#FFF; color:#B45309; border:1px solid #FDE68A; font-size:10px;"></span>
+              <span id="iaLicaoModelo" style="font-size:10px; color:#78350F;"></span>
+            </div>
+            <div id="iaLicaoResumo" style="font-size:12px; color:#451A03; line-height:1.45; font-weight:500;"></div>
+            <ul id="iaLicaoRegras" style="margin:6px 0 0 18px; padding:0; font-size:11px; color:#78350F;"></ul>
+          </div>
+          <button type="button" id="btnReanalisarLicao" class="btn btn-ghost" style="padding:5px 10px; font-size:11px; color:#92400E; border-color:#F59E0B;" onclick="reanalisarAprendizadoOrcamento()">
+            🔄 Atualizar Resumo
+          </button>
+        </div>
+      </div>
+
       <!-- Card Informativo da Matéria-Prima Selecionada/Sugerida pela IA -->
       <div id="iaMaterialBanner" class="card" style="display:none; margin-bottom:14px; padding:12px 16px; background:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #16A34A; border-radius:4px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
@@ -503,17 +546,18 @@
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
           <h2 style="margin:0;"><span class="dot"></span>Insumos do orçamento (Matérias-Primas e Consumíveis)</h2>
-          <span style="font-size:11px; color:var(--texto-suave);">Valores unitários e unidades de medida industriais (KG, PÇ, M, MIN...)</span>
+          <span style="font-size:11px; color:var(--texto-suave);">Informe o consumo por peça e decida a quantidade total para o lote</span>
         </div>
         <div style="overflow-x:auto;">
           <table>
             <thead><tr>
-              <th style="width:34%;">Material / Insumo (catálogo ou livre)</th>
-              <th style="width:12%;">Qtd.</th>
-              <th style="width:14%;">Unid. Medida</th>
-              <th style="width:16%;" class="num">Preço Unit. (R$)</th>
-              <th style="width:18%;" class="num">Subtotal</th>
-              <th style="width:6%;"></th>
+              <th style="width:27%;">Material / Insumo (catálogo ou livre)</th>
+              <th style="width:9%;">Unid.</th>
+              <th style="width:13%;" class="num">Preço Unit. (R$)</th>
+              <th style="width:14%;" class="num" title="Quanto consome em cada peça unitária">Uso p/ Peça</th>
+              <th style="width:17%;" class="num" title="Quantidade total decidida para o orçamento">Qtd. Total</th>
+              <th style="width:15%;" class="num">Subtotal</th>
+              <th style="width:5%;"></th>
             </tr></thead>
             <tbody id="insumos-body"></tbody>
           </table>
@@ -595,13 +639,13 @@
         <div style="overflow-x:auto;">
           <table>
             <thead><tr>
-              <th style="width:23%;">Componente / Máquina</th>
-              <th style="width:21%;">Passo a passo sequencial</th>
+              <th style="width:21%;">Componente / Máquina</th>
+              <th style="width:19%;">Passo a passo sequencial</th>
               <th style="width:10%;">Regime</th>
-              <th style="width:10%;" title="Tempo de operação gasto em 1 peça unitária">H. Unit. (p/ pç)</th>
-              <th style="width:10%;" title="Horas totais para o lote completo">Horas Totais</th>
-              <th style="width:11%;" class="num">Valor h. normal</th>
-              <th style="width:11%;" class="num">Subtotal</th>
+              <th style="width:14%;" class="num" title="Tempo por peça em horas e minutos">Tempo Unit. (h / min)</th>
+              <th style="width:14%;" class="num" title="Tempo total para o lote em horas e minutos">Tempo Total (h / min)</th>
+              <th style="width:9%;" class="num">Valor h.</th>
+              <th style="width:9%;" class="num">Subtotal</th>
               <th style="width:4%;"></th>
             </tr></thead>
             <tbody id="maquinas-body"></tbody>
@@ -701,6 +745,46 @@
           <label class="field"><span>Prazo de pagamento (meses)</span><input id="prazoMeses" type="number" step="0.5" value="0" oninput="calcularTotais()"></label>
           <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">Juros médio mensal definido em Configurações.</p>
         </div>
+      </div>
+
+      <!-- Card 6: Margens Personalizadas deste Orçamento (Etapa 2) -->
+      <div class="card margens-orcamento-card no-print" id="cardMargensOrcamento">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <h2 style="margin:0;"><span class="dot"></span>Margens deste Orçamento (BDI &amp; Desconto)</h2>
+            <span id="badgeMargemOrcamento" class="badge" style="background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE;">Padrão global</span>
+          </div>
+          <button type="button" class="btn btn-ghost" style="padding:4px 10px; font-size:11px;" onclick="restaurarMargensPadraoOrcamento()" title="Voltar às margens padrão de Configurações">
+            ↺ Restaurar Padrão
+          </button>
+        </div>
+        <div class="grid grid-3">
+          <label class="field">
+            <span>Lucro Insumos (%)</span>
+            <input id="orcLucroInsumo" type="number" step="0.1" min="0" max="90" oninput="onMargemOrcamentoChange()">
+          </label>
+          <label class="field">
+            <span>Lucro Mão de Obra (%)</span>
+            <input id="orcLucroMO" type="number" step="0.1" min="0" max="90" oninput="onMargemOrcamentoChange()">
+          </label>
+          <label class="field">
+            <span>Margem p/ Desconto (%)</span>
+            <input id="orcMargemDesconto" type="number" step="0.1" min="0" max="90" oninput="onMargemOrcamentoChange()">
+          </label>
+        </div>
+        <div id="alertaMargemInvalida" style="display:none; margin-top:8px; padding:6px 10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:4px; color:#B91C1C; font-size:11px; font-weight:700;">
+          ⚠️ Atenção: a soma de Despesas Fixas + Impostos + Lucro está muito próxima ou igual a 100%. Reduza o percentual para manter o divisor BDI válido.
+        </div>
+        <details class="margens-avancado-details">
+          <summary>⚙️ Parâmetros avançados deste orçamento (Despesas Fixas, Impostos e Juros)</summary>
+          <div class="grid grid-3" style="margin-top:10px;">
+            <label class="field"><span>Desp. Fixas Insumo (%)</span><input id="orcDespFixasInsumo" type="number" step="0.1" min="0" max="90" oninput="onMargemOrcamentoChange()"></label>
+            <label class="field"><span>Imposto Insumo (%)</span><input id="orcImpostoInsumo" type="number" step="0.01" min="0" max="90" oninput="onMargemOrcamentoChange()"></label>
+            <label class="field"><span>Desp. Fixas M.O. (%)</span><input id="orcDespFixasMO" type="number" step="0.1" min="0" max="90" oninput="onMargemOrcamentoChange()"></label>
+            <label class="field"><span>Imposto M.O. (%)</span><input id="orcImpostoMO" type="number" step="0.01" min="0" max="90" oninput="onMargemOrcamentoChange()"></label>
+            <label class="field"><span>Juros Mensal (%)</span><input id="orcJurosMensal" type="number" step="0.1" min="0" max="30" oninput="onMargemOrcamentoChange()"></label>
+          </div>
+        </details>
       </div>
 
       <!-- Fechamento Comercial / Resultado Azul -->
@@ -842,78 +926,232 @@
 
   <!-- ===================== TAB 2: CHATBOT & REGISTRO DE CONVERSAS ===================== -->
   <section id="tab-chatbot" class="tab-panel">
-    <div class="card">
-      <h2><span class="dot"></span>Chatbot & Registro de Conversas</h2>
-      <p style="font-size:12px; color:var(--texto-suave); margin:0 0 16px;">
-        Registro das conversas trocadas entre o Chatbot e os clientes via WhatsApp/Web. Você pode visualizar o diálogo, inspecionar fotos enviadas e gerar o orçamento formal com 1 clique.
-      </p>
+    <!-- TELA CHEIA: CONFIGURAR CONEXÃO WHATSAPP (EXIBIDA ENQUANTO NÃO HOUVER CONTA CONECTADA) -->
+    <div id="chatbotSemConexaoView">
+      <div class="card chatbot-setup-hero">
+        <div class="chatbot-setup-icon">💬</div>
+        <h2 style="justify-content:center; font-size:19px; margin:0 0 8px;">Conecte seu WhatsApp Business para iniciar o Chatbot</h2>
+        <p style="font-size:13px; color:var(--texto-suave); max-width:620px; margin:0 auto 18px; line-height:1.5;">
+          Nenhuma conta WhatsApp está conectada via <b>Automatas Hub</b>. Informe abaixo o Token de Login, a API Key e a URL de Webhook do projeto para vincular seu número com segurança pelo portal da Automatas.
+        </p>
 
-      <div class="conversas-container">
-        <!-- Coluna Esquerda: Lista de Conversas -->
-        <div class="conversas-sidebar">
-          <div style="padding:10px; background:#F8FAFC; border-bottom:1px solid var(--linha); font-weight:700; font-size:11px; text-transform:uppercase; color:var(--texto-suave);">
-            Conversas Recentes
-          </div>
-          <ul class="conversas-lista" id="conversasListaBody">
-            <!-- Preenchido via JS -->
-          </ul>
+        <div style="display:flex; justify-content:center; margin-bottom:14px;">
+          <label style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--azul-esc); background:#F8FAFC; border:1px solid var(--linha); padding:7px 12px; border-radius:6px; cursor:pointer;">
+            <input type="checkbox" id="chkCoexistenciaSetup" checked onchange="sincronizarCheckCoexistencia(this.checked)">
+            <span><b>Modo Coexistência:</b> manter WhatsApp Business App funcionando no celular junto com a Cloud API</span>
+          </label>
         </div>
 
-        <!-- Coluna Direita: Janela da Conversa Selecionada -->
-        <div class="chat-window">
-          <div class="chat-header">
-            <div>
-              <b id="chatAtivoNome" style="font-size:14px;">Selecione uma conversa</b>
-              <div id="chatAtivoTelefone" style="font-size:11px; color:var(--texto-suave);">---</div>
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button type="button" id="btnConectarFacebookHero" class="btn btn-facebook" style="padding:10px 20px; font-size:13px;" onclick="conectarWhatsappComFacebook()" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Conectar WhatsApp com Facebook
+          </button>
+        </div>
+
+        <div id="chatbotSetupFeedback" style="display:none; max-width:640px; margin:16px auto 0; padding:10px 14px; border-radius:4px; font-size:12px; text-align:left;"></div>
+
+        <!-- Modo Único: Conectar via Automatas Tech Hub (Token JWT + API Key + Webhook) -->
+        <div class="chatbot-manual-details" style="margin-top:16px; text-align:left; border-left:4px solid #2563EB; background:#F8FAFC;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            <b style="font-size:12px; color:#1E40AF;">🔗 Conectar via Automatas Tech Hub (Token + API Key + Webhook)</b>
+            <span id="setupHubLoginStatusBadge" class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; font-size:10px;">🔒 Informe o Token JWT ou API Key</span>
+          </div>
+          <p style="font-size:11px; color:var(--texto-suave); margin:0 0 10px;">
+            Em <b>automatas.tech/app → Projetos &amp; API</b>, gere o <b>Token de Login (JWT)</b> para liberar o Embedded Signup do Facebook e a <b>API Key</b> para enviar/receber dados do WhatsApp pelo Hub.
+          </p>
+          <div class="grid grid-2">
+            <label class="field"><span>Token de Login / Embedded (JWT — libera botão Facebook)</span>
+              <input id="setupHubLoginJwt" type="password" placeholder="eyJhbGciOi..." oninput="atualizarEstadoBotaoLoginHubUI()">
+            </label>
+            <label class="field"><span>API Key do Projeto (aut_live_... — acesso à API WhatsApp)</span>
+              <input id="setupHubApiKey" type="password" placeholder="aut_live_..." oninput="atualizarEstadoBotaoLoginHubUI()">
+              <small id="setupHubApiKeyHint" style="font-size:10px; color:var(--texto-suave); display:none;"></small>
+            </label>
+          </div>
+          <div style="margin-top:10px;">
+            <label class="field"><span>URL do Webhook deste sistema (Recebimento WhatsApp)</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input id="setupHubWebhookUrl" placeholder="https://orcamento.nardelliusinagem.com/api/webhook/meta" style="flex:1;">
+                <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:11px; white-space:nowrap;" onclick="copiarWebhookMetaUrl('setup')">📋 Copiar</button>
+              </div>
+            </label>
+          </div>
+          <details style="margin-top:10px;">
+            <summary style="cursor:pointer; font-size:11px; color:var(--texto-suave); font-weight:600;">⚙️ Endpoints do Hub Automatas (opcional)</summary>
+            <div class="grid grid-2" style="margin-top:8px;">
+              <label class="field"><span>URL da API do Hub (Automatas Backend)</span>
+                <input id="setupHubUrl" value="https://api.automatas.tech" placeholder="https://api.automatas.tech">
+              </label>
+              <label class="field"><span>URL do Site Automatas (Portal /conectar)</span>
+                <input id="setupHubSiteUrl" value="https://automatas.tech" placeholder="https://automatas.tech">
+              </label>
             </div>
-            <div id="chatAtivoAcoes">
-              <!-- Botão Gerar Orçamento / Abrir Orçamento -->
+          </details>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-ghost" style="padding:7px 12px; font-size:12px;" onclick="salvarESincronizarHub('setup')">💾 Salvar &amp; Sincronizar Hub</button>
+            <button type="button" id="btnConectarAutomatasSetup" class="btn btn-facebook" style="padding:7px 14px; font-size:12px;" onclick="abrirConectarAutomatasHub('setup')" disabled>📘 Conectar WhatsApp via Automatas Hub</button>
+          </div>
+        </div>
+
+        <!-- Pré-configuração da Lista de Contatos de Teste antes de conectar -->
+        <div class="chatbot-manual-details" style="margin-top:14px; text-align:left; border-left:4px solid #D97706;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            <b style="font-size:12px; color:var(--azul-esc);">🧪 Contatos Permitidos para Teste (Whitelist)</b>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span data-whitelist-badge class="badge badge-manual">🌐 Modo Aberto</span>
+              <label style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; cursor:pointer; color:var(--azul-esc);">
+                <input type="checkbox" data-whitelist-chk onchange="alternarModoTesteChatbot(this.checked)">
+                Ativar filtro de teste
+              </label>
             </div>
           </div>
-
-          <!-- Banner de Status da Janela de 24h da Meta -->
-          <div id="chatMetaJanelaBanner" class="chat-meta-banner" style="display:none;"></div>
-
-          <!-- Banner de Alerta / Link de Vídeo da Conversa Selecionada -->
-          <div id="chatVideoBanner" class="orcamento-video-banner" style="display:none; margin:10px 14px 0;"></div>
-
-          <div class="chat-body" id="chatAtivoMensagens">
-            <div class="empty-state">Selecione uma conversa à esquerda para ver o histórico de mensagens.</div>
+          <p style="font-size:11px; color:var(--texto-suave); margin:0 0 10px;">
+            Cadastre aqui os números permitidos antes mesmo de conectar seu WhatsApp pessoal. Quando ativado, qualquer outro contato será totalmente ignorado.
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input id="inpContatoTesteNomeSetup" placeholder="Nome (ex: Meu WhatsApp)" style="flex:1 1 160px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;">
+            <input id="inpContatoTesteTelefoneSetup" placeholder="Telefone com DDD (ex: 79999998888)" style="flex:1 1 190px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;" onkeydown="if(event.key==='Enter') adicionarContatoTesteChatbot('setup')">
+            <button type="button" class="btn btn-primary" style="padding:7px 12px; font-size:12px;" onclick="adicionarContatoTesteChatbot('setup')">+ Adicionar</button>
           </div>
-
-          <!-- Caixa de Envio / Simulação de Mensagem -->
-          <div class="chat-footer">
-            <input type="text" id="inputChatMsg" placeholder="Digite uma resposta ou mensagem..." onkeydown="if(event.key==='Enter') enviarMensagemAtendenteOuCliente()">
-            <button type="button" class="btn btn-primary" id="btnChatEnviar" onclick="enviarMensagemAtendenteOuCliente()">Enviar</button>
-            <button type="button" class="btn btn-ghost" style="font-size:11px;" title="Simular que o cliente enviou uma mensagem nova para reabrir a janela de 24h" onclick="simularMensagemClienteEntrando()">Simular Cliente</button>
-          </div>
+          <div data-whitelist-list class="wa-accounts-list" style="margin-top:10px;"></div>
         </div>
       </div>
     </div>
 
-    <!-- Guia de Webhooks de Entrada: Chatbot & Site Oficial -->
-    <div class="grid grid-2">
-      <!-- Webhook WhatsApp/Chatbot -->
+    <!-- TELA DE CONVERSAS & OPERAÇÃO (LIBERADA APÓS CONECTAR UMA CONTA WHATSAPP) -->
+    <div id="chatbotConversasView" style="display:none;">
+      <!-- Barra de Conexão Facebook / Meta WhatsApp Oficial -->
+      <div class="card chatbot-meta-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 style="margin:0 0 4px;"><span class="dot"></span>WhatsApp conectado via Automatas Hub</h2>
+            <div id="chatbotMetaStatusResumo" style="font-size:12px; color:var(--texto-suave);">
+              Verificando número conectado...
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--texto-suave); cursor:pointer;" title="Permite conectar um número já em uso no WhatsApp Business App sem desconectar o celular">
+              <input type="checkbox" id="chkCoexistenciaChatbot" checked onchange="sincronizarCheckCoexistencia(this.checked)">
+              Coexistência (App + Cloud API)
+            </label>
+            <button type="button" class="btn btn-facebook" onclick="conectarWhatsappComFacebook()" title="Abrir portal oficial do Automatas Hub para vincular outro número do WhatsApp Business">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              + Adicionar Número via Facebook
+            </button>
+          </div>
+        </div>
+        <div id="chatbotMetaFeedback" style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
+        <div id="listaContasWhatsappChatbot" class="wa-accounts-list" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Filtro de Contatos Permitidos (Modo Teste em número compartilhado) -->
+      <div class="card chatbot-whitelist-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          <div>
+            <h2 style="margin:0 0 3px;"><span class="dot"></span>Contatos Permitidos para Teste (Whitelist)</h2>
+            <p style="margin:0; font-size:11px; color:var(--texto-suave);">
+              Quando ativado, o bot responde <b>somente</b> aos números desta lista (como número de testes) e <b>ignora totalmente</b> qualquer outro contato sem marcar como lido ou responder.
+            </p>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="badgeModoTesteChatbot" data-whitelist-badge class="badge badge-manual">🌐 Modo Aberto</span>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer; color:var(--azul-esc);">
+              <input type="checkbox" id="chkModoSomenteTeste" data-whitelist-chk onchange="alternarModoTesteChatbot(this.checked)">
+              Ativar filtro de teste
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input id="inpContatoTesteNome" placeholder="Nome / identificação (ex: Meu WhatsApp)" style="flex:1 1 180px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;">
+          <input id="inpContatoTesteTelefone" placeholder="Telefone com DDD (ex: 79999998888)" style="flex:1 1 200px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;" onkeydown="if(event.key==='Enter') adicionarContatoTesteChatbot('chatbot')">
+          <button type="button" class="btn btn-primary" style="padding:7px 14px; font-size:12px;" onclick="adicionarContatoTesteChatbot('chatbot')">+ Adicionar Contato de Teste</button>
+        </div>
+
+        <div id="listaContatosTesteChatbot" data-whitelist-list class="wa-accounts-list" style="margin-top:10px;"></div>
+      </div>
+
       <div class="card">
-        <h2><span class="dot"></span>Webhook Chatbot / WhatsApp (Typebot, Baileys, Z-API)</h2>
-        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
-          Entrada para bots de WhatsApp com controle automático da janela de 24 horas da Meta.
+        <h2><span class="dot"></span>Chatbot & Registro de Conversas</h2>
+        <p style="font-size:12px; color:var(--texto-suave); margin:0 0 16px;">
+          Registro das conversas trocadas entre o Chatbot e os clientes via WhatsApp/Web. Você pode visualizar o diálogo, inspecionar fotos enviadas e gerar o orçamento formal com 1 clique.
         </p>
-        <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px;">
-          POST <b id="displayWebhookChatbotUrl">http://localhost:3213/api/inbound/chatbot</b>
+
+        <div class="conversas-container">
+          <!-- Coluna Esquerda: Lista de Conversas -->
+          <div class="conversas-sidebar">
+            <div style="padding:10px; background:#F8FAFC; border-bottom:1px solid var(--linha); font-weight:700; font-size:11px; text-transform:uppercase; color:var(--texto-suave); display:flex; justify-content:space-between; align-items:center;">
+              <span>Conversas Recentes</span>
+              <button type="button" class="btn btn-ghost" style="padding:2px 7px; font-size:10px;" onclick="limparConversasChatbot()" title="Limpar todas as conversas registradas">🗑️ Limpar</button>
+            </div>
+            <ul class="conversas-lista" id="conversasListaBody">
+              <!-- Preenchido via JS -->
+            </ul>
+          </div>
+
+          <!-- Coluna Direita: Janela da Conversa Selecionada -->
+          <div class="chat-window">
+            <div class="chat-header">
+              <div>
+                <b id="chatAtivoNome" style="font-size:14px;">Selecione uma conversa</b>
+                <div id="chatAtivoTelefone" style="font-size:11px; color:var(--texto-suave);">---</div>
+              </div>
+              <div id="chatAtivoAcoes">
+                <!-- Botão Gerar Orçamento / Abrir Orçamento -->
+              </div>
+            </div>
+
+            <!-- Banner de Status da Janela de 24h da Meta -->
+            <div id="chatMetaJanelaBanner" class="chat-meta-banner" style="display:none;"></div>
+
+            <!-- Checklist em Tempo Real do JEV System One -->
+            <div id="chatJevChecklistBar" class="jev-checklist-bar" style="display:none;"></div>
+
+            <!-- Banner de Alerta / Link de Vídeo da Conversa Selecionada -->
+            <div id="chatVideoBanner" class="orcamento-video-banner" style="display:none; margin:10px 14px 0;"></div>
+
+            <div class="chat-body" id="chatAtivoMensagens">
+              <div class="empty-state">Selecione uma conversa à esquerda para ver o histórico de mensagens.</div>
+            </div>
+
+            <!-- Caixa de Envio / Simulação de Mensagem -->
+            <div class="chat-footer">
+              <input type="text" id="inputChatMsg" placeholder="Digite uma resposta ou mensagem..." onkeydown="if(event.key==='Enter') enviarMensagemAtendenteOuCliente()">
+              <button type="button" class="btn btn-primary" id="btnChatEnviar" onclick="enviarMensagemAtendenteOuCliente()">Enviar</button>
+              <button type="button" class="btn btn-ghost" style="font-size:11px;" title="Simular mensagem do cliente no fluxo oficial do JEV (gera orçamento V1 automaticamente ao completar os 4 dados)" onclick="simularMensagemClienteEntrando()">🧪 Simular Cliente (JEV)</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Webhook Site Oficial nardelliusinagem.com/orcamento -->
-      <div class="card">
-        <h2><span class="dot"></span>Webhook do Site (nardelliusinagem.com/orcamento)</h2>
-        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
-          Recebe solicitações diretas do formulário do site com fotos, vídeos e tipos de peças.
-        </p>
-        <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px; margin-bottom:12px;">
-          POST <b id="displayWebhookSiteUrl">http://localhost:3213/api/webhook/site</b>
+      <!-- Guia de Webhooks de Entrada: Meta API Oficial, Chatbot & Site Oficial -->
+      <div class="grid grid-2">
+        <!-- Webhook Oficial Meta Cloud API -->
+        <div class="card">
+          <h2><span class="dot"></span>Webhook Oficial Meta WhatsApp Cloud API</h2>
+          <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
+            Endpoint oficial (<code>GET</code> verificação + <code>POST</code> mensagens, áudios, vídeos, imagens e ecos de coexistência) com validação HMAC-SHA256 e deduplicação automática.
+          </p>
+          <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px; margin-bottom:8px;">
+            GET / POST <b id="displayWebhookMetaUrl">http://localhost:3005/api/webhook/meta</b>
+          </div>
+          <div style="font-size:11px; color:var(--texto-suave);">
+            Inbound alternativo (Typebot/n8n): <code id="displayWebhookChatbotUrl">http://localhost:3005/api/inbound/chatbot</code>
+          </div>
         </div>
-        <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalSimuladorSite()">🌐 Testar / Simular Envio do Site</button>
+
+        <!-- Webhook Site Oficial nardelliusinagem.com/orcamento -->
+        <div class="card">
+          <h2><span class="dot"></span>Webhook do Site (nardelliusinagem.com/orcamento)</h2>
+          <p style="font-size:12px; color:var(--texto-suave); margin-bottom:10px;">
+            Recebe solicitações diretas do formulário do site com fotos, vídeos e tipos de peças.
+          </p>
+          <div style="background:#0F3A5C; color:#dbe8f0; padding:10px 14px; border-radius:3px; font-size:12px; margin-bottom:12px;">
+            POST <b id="displayWebhookSiteUrl">http://localhost:3213/api/webhook/site</b>
+          </div>
+          <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalSimuladorSite()">🌐 Testar / Simular Envio do Site</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1134,10 +1372,94 @@
         <label class="field"><span>Modelo de Contingência / Fallback (Qwen 3.8 Pro)</span>
           <input id="cfgModeloEconomico" value="qwen/qwen3.8-max-prime">
         </label>
+        <label class="field" style="grid-column:span 2;"><span>Modelo Econômico de Aprendizado (Analisa V1 da IA vs. Último Aprovado)</span>
+          <input id="cfgModeloAnaliseAprendizado" value="google/gemini-2.5-flash" placeholder="google/gemini-2.5-flash">
+        </label>
       </div>
       <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
-        O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Caso o provedor apresente instabilidade momentânea, o sistema aciona automaticamente o modelo de contingência (Qwen 3.8 Pro).
+        O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Quando um orçamento é aprovado, o modelo econômico compara a 1ª versão com a versão final aprovada e gera um resumo de lições para evitar repetir erros no futuro.
       </p>
+      <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--linha);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <b style="font-size:12px; color:var(--azul);">🧠 Últimas Lições Aprendidas pelo Modelo Econômico</b>
+          <button type="button" class="btn btn-ghost" style="padding:3px 9px; font-size:10px;" onclick="carregarLicoesAprendidasConfig()">↻ Atualizar</button>
+        </div>
+        <div id="painelLicoesAprendidasConfig" style="font-size:12px; color:var(--texto-suave);">Carregando lições aprendidas...</div>
+      </div>
+    </div>
+
+    <!-- Integração WhatsApp (Automatas Hub) & Chatbot IA (JEV) -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+        <h2 style="margin:0;"><span class="dot"></span>WhatsApp (Automatas Hub) &amp; Chatbot IA (JEV)</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button type="button" id="btnConectarFacebookConfig" class="btn btn-facebook" style="padding:6px 12px; font-size:11px;" onclick="conectarWhatsappComFacebook()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Conectar WhatsApp com Facebook
+          </button>
+          <button type="button" class="btn btn-ghost" style="padding:5px 12px; font-size:11px; font-weight:700;" onclick="testarConexaoMetaAPI()">🔌 Testar Conexão Hub</button>
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
+        A comunicação com a Meta é feita inteiramente pelo <b>Automatas Hub</b>. Informe o <b>Token de Login (JWT)</b> para liberar o Embedded Signup do Facebook, a <b>API Key</b> para enviar/receber mensagens do WhatsApp e o <b>Webhook</b> deste sistema para receber eventos.
+      </p>
+      <div class="grid grid-2">
+        <label class="field"><span>Token de Login / Embedded (JWT — libera login)</span>
+          <input id="cfgAutomatasLoginJwt" type="password" placeholder="eyJhbGciOi..." oninput="atualizarEstadoBotaoLoginHubUI()">
+        </label>
+        <label class="field"><span>API Key do Projeto (aut_live_... — acesso à API WhatsApp)</span>
+          <input id="cfgAutomatasApiKey" type="password" placeholder="aut_live_..." oninput="atualizarEstadoBotaoLoginHubUI()">
+        </label>
+        <label class="field" style="grid-column:1 / -1;"><span>Webhook URL deste sistema (WhatsApp Recebimento)</span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input id="cfgAutomatasWebhookUrl" placeholder="https://orcamento.nardelliusinagem.com/api/webhook/meta" style="flex:1;">
+            <button type="button" class="btn btn-ghost" style="padding:5px 9px; font-size:11px; white-space:nowrap;" onclick="copiarWebhookMetaUrl('config')">📋 Copiar</button>
+          </div>
+        </label>
+        <label class="field"><span>Chave API Groq (Transcrição Áudio/Vídeo Whisper)</span>
+          <input id="cfgGroqApiKey" type="password" placeholder="gsk_...">
+        </label>
+        <label class="field"><span>Tempo de Debounce de Mensagens (ms)</span>
+          <input id="cfgChatbotDebounceMs" type="number" step="500" value="6000" placeholder="6000">
+        </label>
+      </div>
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer; font-size:11px; color:var(--texto-suave); font-weight:600;">⚙️ Endpoints do Hub Automatas (opcional)</summary>
+        <div class="grid grid-2" style="margin-top:8px;">
+          <label class="field"><span>Automatas Hub API URL</span>
+            <input id="cfgAutomatasHubUrl" value="https://api.automatas.tech" placeholder="https://api.automatas.tech">
+          </label>
+          <label class="field"><span>Automatas Site URL (Portal /conectar)</span>
+            <input id="cfgAutomatasSiteUrl" value="https://automatas.tech" placeholder="https://automatas.tech">
+          </label>
+        </div>
+      </details>
+      <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span id="cfgHubLoginStatusBadge" class="badge" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; font-size:10px;">🔒 Informe o Token JWT ou API Key</span>
+        <button type="button" class="btn btn-ghost" style="padding:5px 11px; font-size:11px;" onclick="salvarESincronizarHub('config')">🔗 Salvar &amp; Sincronizar Automatas Hub</button>
+        <button type="button" id="btnConectarAutomatasConfig" class="btn btn-facebook" style="padding:5px 11px; font-size:11px;" onclick="abrirConectarAutomatasHub('config')" disabled>📘 Conectar via Portal Automatas Hub</button>
+      </div>
+      <div id="metaTesteStatus" style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
+      <div id="listaContasWhatsappConfig" class="wa-accounts-list" style="margin-top:12px;"></div>
+
+      <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--linha);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <b style="font-size:12px; color:var(--azul-esc);">🧪 Contatos Permitidos para Teste (Whitelist do WhatsApp)</b>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span data-whitelist-badge class="badge badge-manual">🌐 Modo Aberto</span>
+            <label style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; cursor:pointer; color:var(--azul-esc);">
+              <input type="checkbox" data-whitelist-chk onchange="alternarModoTesteChatbot(this.checked)">
+              Responder somente esta lista
+            </label>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input id="inpContatoTesteNomeConfig" placeholder="Nome / identificação" style="flex:1 1 180px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;">
+          <input id="inpContatoTesteTelefoneConfig" placeholder="Telefone com DDD (ex: 79999998888)" style="flex:1 1 200px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;" onkeydown="if(event.key==='Enter') adicionarContatoTesteChatbot('config')">
+          <button type="button" class="btn btn-primary" style="padding:7px 14px; font-size:12px;" onclick="adicionarContatoTesteChatbot('config')">+ Adicionar Contato de Teste</button>
+        </div>
+        <div data-whitelist-list class="wa-accounts-list" style="margin-top:10px;"></div>
+      </div>
     </div>
 
     <!-- Banco de Dados PostgreSQL & Persistência -->
@@ -1272,7 +1594,7 @@
 
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
       <button type="button" class="btn btn-ghost" onclick="fecharModalSimuladorSite()">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="submeterSimulacaoSite()">Simular Envio do Site</button>
+      <button type="button" class="btn btn-primary" onclick="dispararSimulacaoSite()">Simular Envio do Site</button>
     </div>
   </div>
 </div>
@@ -1303,9 +1625,12 @@
     </label>
 
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px;">
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="btn btn-whatsapp-web" onclick="dispararEnvioWhatsAppWeb()" style="padding:8px 16px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-          🟢 Abrir no WhatsApp Web
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-whatsapp-web" onclick="dispararEnvioWhatsAppWeb()" style="padding:8px 14px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+          🟢 WhatsApp Web
+        </button>
+        <button type="button" id="btnEnviarViaMetaAPI" class="btn" onclick="dispararEnvioViaMetaAPI()" style="background:#0EA5E9; color:#fff; border-color:#0284C7; padding:8px 14px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;" title="Enviar diretamente pela WhatsApp Cloud API Oficial da Meta (quando janela 24h ativa)">
+          📨 Enviar via API Meta
         </button>
         <button type="button" class="btn btn-ghost" onclick="copiarMensagemEnvio()" style="padding:8px 12px; font-size:12px;">
           📋 Copiar Texto
@@ -1449,6 +1774,7 @@
     <img id="lightboxImg" class="lightbox-img" src="" alt="Visualização da Imagem">
     <div id="lightboxLegenda" class="lightbox-legenda"></div>
   </div>
+</div>
 <!-- Overlay Global de Bloqueio Durante Análise / Recálculo de IA -->
 <div id="overlayBloqueioIA" style="display:none; position:fixed; inset:0; z-index:100000; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:16px;">
   <div style="background:#FFFFFF; border-radius:12px; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.15); width:100%; max-width:460px; overflow:hidden; border-top:4px solid #2563EB; animation:modalPopIn 0.25s ease-out;">
@@ -1539,6 +1865,7 @@
         <div><b>Matéria-Prima:</b> <span id="pdfMaterialPeca">Aço Carbono 1045</span></div>
         <div id="pdfLinhaTratamento"><b>Tratamento Térmico:</b> <span id="pdfTratamentoTermico">Nenhum</span></div>
         <div id="pdfLinhaDureza" style="display:none;"><b>Dureza Requerida:</b> <span id="pdfDureza">---</span></div>
+        <div id="pdfLinhaModelagem3D" style="display:none;"><b>Modelagem 3D:</b> <span id="pdfModelagem3D">---</span></div>
         <div id="pdfLinhaPrazo"><b>Prazo Estimado:</b> <span id="pdfPrazoFab">4 a 5 dias úteis</span></div>
       </div>
       <div id="pdfBoxObsTecnicas" style="margin-top:8px; font-size:8.5pt; color:#475569; display:none;">
@@ -1661,6 +1988,6 @@
 </div>
 
 <!-- Scripts -->
-<script src="/js/app.js?v=20261030a"></script>
+<script src="/js/app.js?v=20261123a"></script>
 </body>
 </html>

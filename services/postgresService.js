@@ -137,7 +137,7 @@ class PostgresService {
       `ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS ajustes_humano JSONB DEFAULT '{}'::jsonb;`,
       `ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS referencia_historica JSONB DEFAULT '{}'::jsonb;`,
 
-      // 3. Tabela de Conversas (com controle da janela 24h da Meta)
+      // 3. Tabela de Conversas (com controle da janela 24h da Meta + JEV + Pausa IA)
       `CREATE TABLE IF NOT EXISTS conversas (
         id VARCHAR(80) PRIMARY KEY,
         cliente_nome VARCHAR(200),
@@ -150,9 +150,19 @@ class PostgresService {
         mensagens JSONB DEFAULT '[]'::jsonb,
         ultima_mensagem_cliente_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         canal_origem VARCHAR(80) DEFAULT 'whatsapp',
+        ai_enabled BOOLEAN DEFAULT TRUE,
+        last_human_interaction TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+        jev_state JSONB DEFAULT '{}'::jsonb,
+        arquivos JSONB DEFAULT '[]'::jsonb,
+        phone_number_id VARCHAR(80) DEFAULT NULL,
         data_criacao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN DEFAULT TRUE;`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS last_human_interaction TIMESTAMP WITH TIME ZONE DEFAULT NULL;`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS jev_state JSONB DEFAULT '{}'::jsonb;`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS arquivos JSONB DEFAULT '[]'::jsonb;`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS phone_number_id VARCHAR(80) DEFAULT NULL;`,
 
       // 4. Catálogo de Insumos
       `CREATE TABLE IF NOT EXISTS catalogo_insumos (
@@ -193,7 +203,9 @@ class PostgresService {
         data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
       `ALTER TABLE clientes ADD COLUMN IF NOT EXISTS cep VARCHAR(20);`,
-      `ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS cliente_cep VARCHAR(20);`
+      `ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS cliente_cep VARCHAR(20);`,
+      `ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS dados_extras JSONB DEFAULT '{}'::jsonb;`,
+      `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS wa_id VARCHAR(50) DEFAULT NULL;`
     ];
 
     for (const q of queries) {
@@ -269,15 +281,46 @@ class PostgresService {
   async salvarOrcamento(orc) {
     if (!this.isConnected()) return null;
 
+    const dadosExtras = {
+      quantidadePecas: orc.quantidadePecas || 1,
+      unidadePeca: orc.unidadePeca || 'PÇ',
+      categoriaPeca: orc.categoriaPeca || 'Usinagem Geral',
+      materialPeca: orc.materialPeca || '',
+      materialDefinido: orc.materialDefinido || '',
+      materialOrigem: orc.materialOrigem || '',
+      justificativaMaterial: orc.justificativaMaterial || '',
+      prazoDesejado: orc.prazoDesejado || '',
+      tratamentoTermico: orc.tratamentoTermico || 'Nenhum',
+      durezaDesejada: orc.durezaDesejada || '',
+      detalhesTermico: orc.detalhesTermico || '',
+      possuiModelagem3D: !!orc.possuiModelagem3D,
+      incluirModelagem3D: !!orc.incluirModelagem3D,
+      detalhesModelagem3D: orc.detalhesModelagem3D || '',
+      margensPersonalizadas: orc.margensPersonalizadas || null,
+      ehConjuntoMultiPecas: !!orc.ehConjuntoMultiPecas,
+      pecas: orc.pecas || [],
+      historicoEventos: orc.historicoEventos || [],
+      feedbackCliente: orc.feedbackCliente || null,
+      resumoAprendizadoIA: orc.resumoAprendizadoIA || null,
+      visualizado: !!orc.visualizado,
+      dataInicio: orc.dataInicio || null,
+      dataEnvioCliente: orc.dataEnvioCliente || null,
+      canalEnvio: orc.canalEnvio || null,
+      dataAprovacao: orc.dataAprovacao || null,
+      dataRecusa: orc.dataRecusa || null,
+      dataUltimoAjuste: orc.dataUltimoAjuste || null,
+      videoInfo: orc.videoInfo || null
+    };
+
     const query = `
       INSERT INTO orcamentos (
         id, numero, origem, canal_origem, status,
-        cliente_nome, cliente_tel, cliente_email, cliente_endereco, cliente_contato,
+        cliente_nome, cliente_tel, cliente_email, cliente_cep, cliente_endereco, cliente_contato,
         descricao_servico, observacoes, arquivos, itens_insumo, itens_maquina,
         mo_escritorio, frete, parcelamento, analise_ia, totais,
         versao_original_ia, revisado_por_humano, ajustado_manualmente, ajustes_humano, referencia_historica,
-        data_criacao, data_atualizacao
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())
+        dados_extras, data_criacao, data_atualizacao
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, NOW())
       ON CONFLICT (id) DO UPDATE SET
         numero = EXCLUDED.numero,
         origem = EXCLUDED.origem,
@@ -286,6 +329,7 @@ class PostgresService {
         cliente_nome = EXCLUDED.cliente_nome,
         cliente_tel = EXCLUDED.cliente_tel,
         cliente_email = EXCLUDED.cliente_email,
+        cliente_cep = EXCLUDED.cliente_cep,
         cliente_endereco = EXCLUDED.cliente_endereco,
         cliente_contato = EXCLUDED.cliente_contato,
         descricao_servico = EXCLUDED.descricao_servico,
@@ -303,6 +347,7 @@ class PostgresService {
         ajustado_manualmente = EXCLUDED.ajustado_manualmente,
         ajustes_humano = EXCLUDED.ajustes_humano,
         referencia_historica = EXCLUDED.referencia_historica,
+        dados_extras = EXCLUDED.dados_extras,
         data_atualizacao = NOW()
       RETURNING *;
     `;
@@ -316,6 +361,7 @@ class PostgresService {
       orc.cliente?.nome || '',
       orc.cliente?.tel || '',
       orc.cliente?.email || '',
+      orc.cliente?.cep || '',
       orc.cliente?.endereco || '',
       orc.cliente?.contato || '',
       orc.descricaoServico || '',
@@ -333,6 +379,7 @@ class PostgresService {
       !!orc.ajustadoManualmente,
       JSON.stringify(orc.ajustesHumano || {}),
       JSON.stringify(orc.referenciaHistorica || {}),
+      JSON.stringify(dadosExtras),
       orc.dataCriacao || new Date().toISOString()
     ];
 
@@ -360,6 +407,23 @@ class PostgresService {
     return this.mapConversaFromRow(res.rows[0]);
   }
 
+  async buscarConversaPorTelefone(telefone) {
+    if (!this.isConnected()) return null;
+    const digits = String(telefone || '').replace(/\D/g, '');
+    if (!digits) return null;
+    const suffix = digits.length >= 8 ? digits.slice(-8) : digits;
+    const res = await this.pool.query(
+      `SELECT * FROM conversas
+       WHERE REGEXP_REPLACE(COALESCE(cliente_telefone, ''), '[^0-9]', '', 'g') = $1
+          OR RIGHT(REGEXP_REPLACE(COALESCE(cliente_telefone, ''), '[^0-9]', '', 'g'), 8) = $2
+       ORDER BY data_atualizacao DESC
+       LIMIT 1`,
+      [digits, suffix]
+    );
+    if (res.rows.length === 0) return null;
+    return this.mapConversaFromRow(res.rows[0]);
+  }
+
   async salvarConversa(conv) {
     if (!this.isConnected()) return null;
 
@@ -367,8 +431,9 @@ class PostgresService {
       INSERT INTO conversas (
         id, cliente_nome, cliente_telefone, cliente_empresa, status,
         orcamento_id, orcamento_numero, descricao_servico, mensagens,
-        ultima_mensagem_cliente_em, canal_origem, data_atualizacao
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        ultima_mensagem_cliente_em, canal_origem, ai_enabled,
+        last_human_interaction, jev_state, arquivos, phone_number_id, wa_id, data_atualizacao
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())
       ON CONFLICT (id) DO UPDATE SET
         cliente_nome = EXCLUDED.cliente_nome,
         cliente_telefone = EXCLUDED.cliente_telefone,
@@ -380,6 +445,12 @@ class PostgresService {
         mensagens = EXCLUDED.mensagens,
         ultima_mensagem_cliente_em = EXCLUDED.ultima_mensagem_cliente_em,
         canal_origem = EXCLUDED.canal_origem,
+        ai_enabled = EXCLUDED.ai_enabled,
+        last_human_interaction = EXCLUDED.last_human_interaction,
+        jev_state = EXCLUDED.jev_state,
+        arquivos = EXCLUDED.arquivos,
+        phone_number_id = EXCLUDED.phone_number_id,
+        wa_id = COALESCE(EXCLUDED.wa_id, conversas.wa_id),
         data_atualizacao = NOW()
       RETURNING *;
     `;
@@ -395,11 +466,46 @@ class PostgresService {
       conv.descricaoServico || '',
       JSON.stringify(conv.mensagens || []),
       conv.ultimaMensagemClienteEm ? new Date(conv.ultimaMensagemClienteEm).toISOString() : new Date().toISOString(),
-      conv.canalOrigem || 'whatsapp'
+      conv.canalOrigem || 'whatsapp',
+      conv.aiEnabled !== false,
+      conv.lastHumanInteraction ? new Date(conv.lastHumanInteraction).toISOString() : null,
+      JSON.stringify(conv.jevState || {}),
+      JSON.stringify(conv.arquivos || []),
+      conv.phoneNumberId || null,
+      conv.waId || null
     ];
 
     const res = await this.pool.query(query, values);
     return this.mapConversaFromRow(res.rows[0]);
+  }
+
+  async deletarConversa(id) {
+    if (!this.isConnected()) return false;
+    const res = await this.pool.query('DELETE FROM conversas WHERE id = $1', [id]);
+    return res.rowCount > 0;
+  }
+
+  async limparConversas() {
+    if (!this.isConnected()) return false;
+    await this.pool.query('DELETE FROM conversas');
+    return true;
+  }
+
+  // ===================== CONFIGURAÇÕES / CHAVES =====================
+  async getConfiguracaoChave(chave) {
+    if (!this.isConnected()) return null;
+    const res = await this.pool.query('SELECT valor FROM configuracoes WHERE chave = $1', [chave]);
+    return res.rows.length ? res.rows[0].valor : null;
+  }
+
+  async setConfiguracaoChave(chave, valor) {
+    if (!this.isConnected()) return null;
+    await this.pool.query(
+      `INSERT INTO configuracoes (chave, valor) VALUES ($1, $2)
+       ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [chave, JSON.stringify(valor)]
+    );
+    return valor;
   }
 
   // ===================== CLIENTES =====================
@@ -483,7 +589,9 @@ class PostgresService {
 
   // ===================== HELPERS DE MAPEAMENTO =====================
   mapOrcamentoFromRow(row) {
+    const extras = (row.dados_extras && typeof row.dados_extras === 'object') ? row.dados_extras : {};
     return {
+      ...extras,
       id: row.id,
       numero: row.numero,
       origem: row.origem,
@@ -495,6 +603,7 @@ class PostgresService {
         nome: row.cliente_nome || '',
         tel: row.cliente_tel || '',
         email: row.cliente_email || '',
+        cep: row.cliente_cep || '',
         endereco: row.cliente_endereco || '',
         contato: row.cliente_contato || ''
       },
@@ -531,6 +640,12 @@ class PostgresService {
       mensagens: row.mensagens || [],
       ultimaMensagemClienteEm: row.ultima_mensagem_cliente_em,
       canalOrigem: row.canal_origem,
+      aiEnabled: row.ai_enabled !== false,
+      lastHumanInteraction: row.last_human_interaction || null,
+      jevState: row.jev_state || {},
+      arquivos: row.arquivos || [],
+      phoneNumberId: row.phone_number_id || null,
+      waId: row.wa_id || null,
       dataCriacao: row.data_criacao,
       dataAtualizacao: row.data_atualizacao
     };

@@ -119,6 +119,9 @@ router.post('/', async (req, res) => {
     const tratamento = payload.tratamento || payload.tratamento_termico || payload.processo || (payload.tratamento_termico === true ? 'Têmpera' : 'Nenhum');
     const durezaDesejada = payload.dureza_desejada || payload.dureza || '';
     const detalhesTermico = payload.detalhes_termico || payload.especificacoes || '';
+    const possuiModelagem3D = Boolean(payload.possui_modelagem_3d === true || payload.possui_modelagem_3d === 'true' || payload.possuiModelagem3D === true);
+    const incluirModelagem3D = Boolean(!possuiModelagem3D && (payload.incluir_modelagem_3d === true || payload.incluir_modelagem_3d === 'true' || payload.incluirModelagem3D === true));
+    const detalhesModelagem3D = payload.detalhes_modelagem_3d || payload.detalhesModelagem3D || '';
 
     const config = dbService.getConfig();
 
@@ -146,6 +149,9 @@ router.post('/', async (req, res) => {
       tratamentoTermico: tratamento,
       durezaDesejada: durezaDesejada,
       detalhesTermico: detalhesTermico,
+      possuiModelagem3D,
+      incluirModelagem3D,
+      detalhesModelagem3D,
       observacoes: obsAdicionais,
       videoInfo: {
         enviarVideo: enviarVideo,
@@ -187,7 +193,10 @@ router.post('/', async (req, res) => {
           material: material,
           tratamentoTermico: tratamento,
           durezaDesejada: durezaDesejada,
-          detalhesTermico: detalhesTermico
+          detalhesTermico: detalhesTermico,
+          possuiModelagem3D,
+          incluirModelagem3D,
+          detalhesModelagem3D
         });
 
         if (resultadoIA && resultadoIA.sucesso) {
@@ -374,11 +383,18 @@ function calcularTotaisNardelli(orc, cfg) {
 
   const totalMO = totalMaquina + num(orc.moEscritorio);
 
-  const mcInsumo = num(cfg.despFixasInsumo) + num(cfg.impostoInsumo) + num(cfg.lucroInsumo);
+  const mp = (orc.margensPersonalizadas && orc.margensPersonalizadas.ativa) ? orc.margensPersonalizadas : {};
+  const despFixasInsumo = mp.despFixasInsumo !== undefined ? num(mp.despFixasInsumo) : num(cfg.despFixasInsumo);
+  const impostoInsumo = mp.impostoInsumo !== undefined ? num(mp.impostoInsumo) : num(cfg.impostoInsumo);
+  const lucroInsumo = mp.lucroInsumo !== undefined ? num(mp.lucroInsumo) : num(cfg.lucroInsumo);
+  const mcInsumo = despFixasInsumo + impostoInsumo + lucroInsumo;
   const taxaInsumo = 1 - mcInsumo;
   const valorInsumoComMargem = taxaInsumo > 0 ? (totalInsumos / taxaInsumo) : totalInsumos;
 
-  const mcMO = num(cfg.despFixasMO) + num(cfg.impostoMO) + num(cfg.lucroMO);
+  const despFixasMO = mp.despFixasMO !== undefined ? num(mp.despFixasMO) : num(cfg.despFixasMO);
+  const impostoMO = mp.impostoMO !== undefined ? num(mp.impostoMO) : num(cfg.impostoMO);
+  const lucroMO = mp.lucroMO !== undefined ? num(mp.lucroMO) : num(cfg.lucroMO);
+  const mcMO = despFixasMO + impostoMO + lucroMO;
   const taxaMO = 1 - mcMO;
   const valorMOComMargem = taxaMO > 0 ? (totalMO / taxaMO) : totalMO;
 
@@ -388,7 +404,8 @@ function calcularTotaisNardelli(orc, cfg) {
   const freteTotal = (distKm * num(cfg.custoKm) * 2 * viagens) / pecas;
 
   const semDesconto = valorInsumoComMargem + valorMOComMargem + freteTotal;
-  const comDesconto = semDesconto * (1 + num(cfg.margemDesconto));
+  const margemDesc = mp.margemDesconto !== undefined ? num(mp.margemDesconto) : num(cfg.margemDesconto);
+  const comDesconto = semDesconto * (1 + margemDesc);
 
   const qtdPecas = Math.max(1, num(orc.quantidadePecas) || 1);
   const unidadePeca = (orc.unidadePeca || 'PÇ').toUpperCase();

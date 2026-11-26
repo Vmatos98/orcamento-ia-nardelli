@@ -18,7 +18,33 @@
     "modeloGerador": "anthropic/claude-sonnet-5.5",
     "modeloEconomico": "qwen/qwen3.8-max-prime",
     "otimizarTokens": true,
-    "temperatura": 0.2
+    "temperatura": 0.2,
+    "chatbotContatosTeste": [
+      {
+        "id": "ct_mwtlhg9i8zq",
+        "nome": "Victor",
+        "telefone": "5575999070840",
+        "criadoEm": "2026-11-23T18:24:10.134Z"
+      },
+      {
+        "id": "ct_mwtljrjyx1y",
+        "nome": "Fabiano",
+        "telefone": "5579999478714",
+        "criadoEm": "2026-11-23T18:25:58.078Z"
+      },
+      {
+        "id": "ct_mwtlkepxatv",
+        "nome": "Bruna",
+        "telefone": "5579988474112",
+        "criadoEm": "2026-11-23T18:26:28.101Z"
+      }
+    ],
+    "chatbotModoSomenteContatosTeste": true,
+    "metaAppId": "4218008138464726",
+    "metaConfigId": "1053665804165045",
+    "metaPhoneNumberId": "1031254103408077",
+    "metaWabaId": "901200939212032",
+    "metaBusinessId": "2142689116339371"
   },
   "insumos": [
     {
@@ -659,6 +685,20 @@
       "normal": 20,
       "h50": 30,
       "h100": 40
+    },
+    {
+      "id": "maq_modelagem_3d",
+      "nome": "Engenharia / Modelagem 3D (CAD/CAM)",
+      "categoria": "Engenharia e Projeto CAD",
+      "marca": "Nardelli",
+      "modelo": "CAD/CAM 3D",
+      "ano": 2024,
+      "capacidade": "Levantamento dimensional, desenho técnico 2D e modelagem sólida 3D (STEP/IGES/STL)",
+      "descricao": "Criação de modelo 3D paramétrico e detalhamento técnico a partir de amostra física, croqui ou especificações",
+      "observacoes": "Incluído quando o cliente não possui modelagem 3D pronta",
+      "normal": 35,
+      "h50": 52.5,
+      "h100": 70
     }
   ],
   "orcamentos": [],
@@ -674,5 +714,36 @@
       "created_at": "2026-10-19T16:58:42.853Z"
     }
   ],
-  "clientes": []
+  "clientes": [],
+  "licoesAprendidas": [],
+  "whatsappAccounts": [
+    {
+      "phoneNumberId": "1031254103408077",
+      "wabaId": "901200939212032",
+      "businessId": "2142689116339371",
+      "displayPhoneNumber": "+55 79 9699-6780",
+      "verifiedName": "Automatas tech",
+      "qualityRating": "",
+      "status": "active",
+      "accessToken": "",
+      "userId": "",
+      "userName": "WhatsApp Business Integrado",
+      "userEmail": "",
+      "userPicture": "",
+      "isCoexistence": true,
+      "onboardingMode": "coexistence",
+      "authType": "embedded_signup",
+      "tokenExchanged": false,
+      "webhookSubscribed": true,
+      "syncWarnings": [
+        "Sync \"smb_app_state_sync\": (#135000) Generic user error",
+        "Sync \"history\": (#135000) Generic user error"
+      ],
+      "connectedAt": "2026-11-23T18:32:46.904Z",
+      "updatedAt": "2026-11-25T04:26:21.905Z",
+      "contactsSynced": false,
+      "historySynced": false,
+      "lastSyncAt": "2026-11-25T04:26:18.108Z"
+    }
+  ]
 }

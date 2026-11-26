@@ -43,6 +43,14 @@ function preencherFormularioConfig() {
   setVal('cfgModeloGerador', appConfig.modeloGerador || 'anthropic/claude-sonnet-5.5');
   setVal('cfgModeloEconomico', appConfig.modeloEconomico || 'qwen/qwen3.8-max-prime');
 
+  setVal('cfgMetaVerifyToken', appConfig.metaVerifyToken || 'nardelli_meta_verify_2026');
+  setVal('cfgMetaPhoneNumberId', appConfig.metaPhoneNumberId || '');
+  setVal('cfgMetaAccessToken', appConfig.metaAccessToken || '');
+  setVal('cfgMetaAppSecret', appConfig.metaAppSecret || '');
+  setVal('cfgMetaApiVersion', appConfig.metaApiVersion || 'v24.0');
+  setVal('cfgGroqApiKey', appConfig.groqApiKey || '');
+  setVal('cfgChatbotDebounceMs', appConfig.chatbotDebounceMs !== undefined ? appConfig.chatbotDebounceMs : 6000);
+
   const chk = document.getElementById('cfgOtimizarTokens');
   if (chk) chk.checked = !!appConfig.otimizarTokens;
 }
@@ -85,7 +93,15 @@ async function salvarConfiguracoesGerais() {
     modeloRoteador: document.getElementById('cfgModeloRoteador').value.trim() || 'google/gemini-2.5-flash',
     modeloGerador: document.getElementById('cfgModeloGerador').value.trim() || 'anthropic/claude-sonnet-5.5',
     modeloEconomico: document.getElementById('cfgModeloEconomico').value.trim() || 'qwen/qwen3.8-max-prime',
-    otimizarTokens: document.getElementById('cfgOtimizarTokens').checked
+    otimizarTokens: document.getElementById('cfgOtimizarTokens') ? document.getElementById('cfgOtimizarTokens').checked : true,
+
+    metaVerifyToken: document.getElementById('cfgMetaVerifyToken')?.value.trim() || 'nardelli_meta_verify_2026',
+    metaPhoneNumberId: document.getElementById('cfgMetaPhoneNumberId')?.value.trim() || '',
+    metaAccessToken: document.getElementById('cfgMetaAccessToken')?.value.trim() || '',
+    metaAppSecret: document.getElementById('cfgMetaAppSecret')?.value.trim() || '',
+    metaApiVersion: document.getElementById('cfgMetaApiVersion')?.value.trim() || 'v24.0',
+    groqApiKey: document.getElementById('cfgGroqApiKey')?.value.trim() || '',
+    chatbotDebounceMs: parseInt(document.getElementById('cfgChatbotDebounceMs')?.value || '6000', 10) || 6000
   };
 
   try {

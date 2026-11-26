@@ -5,6 +5,19 @@ const path = require('path');
 const fs = require('fs');
 const dbService = require('../services/dbService');
 const aiService = require('../services/aiService');
+const metaWhatsappService = require('../services/metaWhatsappService');
+
+async function dispararAnaliseAprendizadoSeElegivel(orcamento) {
+  try {
+    if (!orcamento || !orcamento.versaoOriginalIA) return null;
+    if (!['APROVADO', 'CONCLUIDO'].includes(orcamento.status)) return null;
+    if (!dbService.isModeloAprendizagemAtivo()) return null;
+    return await aiService.analisarDiferencasParaAprendizado(orcamento);
+  } catch (err) {
+    console.warn('[Aprendizado IA] Erro não-bloqueante ao analisar diferenças:', err.message);
+    return null;
+  }
+}
 
 // Configuração do multer para upload de desenhos e imagens
 const uploadDir = path.join(__dirname, '..', 'data', 'uploads');
@@ -108,7 +121,9 @@ router.get('/orcamentos/:id', async (req, res) => {
 router.post('/orcamentos', async (req, res) => {
   try {
     const orcamento = req.body;
-    const salvo = await dbService.saveOrcamento(orcamento);
+    let salvo = await dbService.saveOrcamento(orcamento);
+    const licao = await dispararAnaliseAprendizadoSeElegivel(salvo);
+    if (licao) salvo.resumoAprendizadoIA = licao;
     res.status(201).json({ sucesso: true, orcamento: salvo });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
@@ -118,7 +133,9 @@ router.post('/orcamentos', async (req, res) => {
 router.put('/orcamentos/:id', async (req, res) => {
   try {
     const orcamento = { ...req.body, id: req.params.id, revisadoPorHumano: true };
-    const salvo = await dbService.saveOrcamento(orcamento);
+    let salvo = await dbService.saveOrcamento(orcamento);
+    const licao = await dispararAnaliseAprendizadoSeElegivel(salvo);
+    if (licao) salvo.resumoAprendizadoIA = licao;
     res.json({ sucesso: true, orcamento: salvo });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
@@ -142,19 +159,63 @@ router.patch('/orcamentos/:id/status', async (req, res) => {
       usuario: usuario || 'Orçamentista'
     });
 
-    const salvo = await dbService.saveOrcamento(orc);
+    let salvo = await dbService.saveOrcamento(orc);
+    const licao = await dispararAnaliseAprendizadoSeElegivel(salvo);
+    if (licao) salvo.resumoAprendizadoIA = licao;
     res.json({ sucesso: true, orcamento: salvo });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
   }
 });
 
-// Envio formal da proposta ao cliente (WhatsApp, E-mail, PDF)
+// Envio formal da proposta ao cliente (WhatsApp Web, API Oficial Meta, E-mail, PDF)
 router.post('/orcamentos/:id/enviar-cliente', async (req, res) => {
   try {
-    const { canal = 'whatsapp', mensagem, telefone, email, usuario } = req.body;
+    const { canal = 'whatsapp', mensagem, telefone, email, usuario, enviarViaMeta = false } = req.body;
     const orc = await dbService.getOrcamentoById(req.params.id);
     if (!orc) return res.status(404).json({ sucesso: false, erro: 'Orçamento não encontrado' });
+
+    const destinoTel = telefone || orc.cliente?.tel || orc.cliente?.telefone || '';
+    let envioMeta = null;
+
+    if (enviarViaMeta && destinoTel) {
+      const conversa = await dbService.getConversaByTelefone(destinoTel);
+      let janelaExpirada = false;
+      if (conversa && conversa.ultimaMensagemClienteEm) {
+        const horasPassadas = (Date.now() - new Date(conversa.ultimaMensagemClienteEm).getTime()) / (1000 * 60 * 60);
+        janelaExpirada = horasPassadas >= 24;
+      }
+      if (janelaExpirada) {
+        envioMeta = {
+          sucesso: false,
+          janelaExpirada: true,
+          erro: 'Janela de 24h da Meta expirada para esta conversa. Utilize o WhatsApp Web ou um template aprovado pela Meta.'
+        };
+      } else {
+        try {
+          envioMeta = await metaWhatsappService.sendTextMessage({
+            to: conversa?.waId || destinoTel,
+            text: mensagem || `Olá ${orc.cliente?.nome || ''}, sua proposta #${orc.numero} está pronta!`,
+            phoneNumberId: conversa?.phoneNumberId
+          });
+          if (conversa && envioMeta?.sucesso) {
+            conversa.mensagens = conversa.mensagens || [];
+            conversa.mensagens.push({
+              id: envioMeta.messageId || ('m_prop_' + Date.now()),
+              remetente: 'atendente',
+              texto: mensagem,
+              origem: 'proposta_enviada_meta',
+              hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            });
+            conversa.aiEnabled = false;
+            conversa.lastHumanInteraction = new Date().toISOString();
+            await dbService.saveConversa(conversa);
+          }
+        } catch (errMeta) {
+          envioMeta = { sucesso: false, erro: errMeta.message };
+        }
+      }
+    }
 
     orc.status = 'ENVIADO_AO_CLIENTE';
     orc.dataEnvioCliente = new Date().toISOString();
@@ -164,19 +225,19 @@ router.post('/orcamentos/:id/enviar-cliente', async (req, res) => {
       orc.historicoEventos = [];
     }
 
-    const valorTxt = (orc.totais?.totalFinalComDesconto || orc.totais?.totalSemDesconto || 0);
+    const valorTxt = (orc.totais?.totalFinal || orc.totais?.comDesconto || orc.totais?.semDesconto || 0);
     orc.historicoEventos.unshift({
       id: 'evt_' + Date.now().toString(36),
       data: new Date().toISOString(),
       tipo: 'ENVIO_CLIENTE',
-      titulo: `Proposta enviada ao cliente via ${canal === 'whatsapp' ? 'WhatsApp' : 'E-mail'}`,
+      titulo: `Proposta enviada ao cliente via ${enviarViaMeta ? 'WhatsApp API Oficial (Meta)' : (canal === 'whatsapp' ? 'WhatsApp' : 'E-mail')}`,
       detalhes: mensagem ? mensagem.slice(0, 300) : `Proposta enviada no valor de R$ ${Number(valorTxt).toFixed(2)}`,
       canal,
       usuario: usuario || 'Orçamentista'
     });
 
     const salvo = await dbService.saveOrcamento(orc);
-    res.json({ sucesso: true, orcamento: salvo });
+    res.json({ sucesso: true, orcamento: salvo, envioMeta });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
   }
@@ -249,7 +310,11 @@ router.post('/orcamentos/:id/feedback-cliente', async (req, res) => {
       return res.status(400).json({ sucesso: false, erro: 'Ação inválida (use aprovar, ajuste ou recusar)' });
     }
 
-    const salvo = await dbService.saveOrcamento(orc);
+    let salvo = await dbService.saveOrcamento(orc);
+    if (acao === 'aprovar') {
+      const licao = await dispararAnaliseAprendizadoSeElegivel(salvo);
+      if (licao) salvo.resumoAprendizadoIA = licao;
+    }
     res.json({ sucesso: true, orcamento: salvo });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
@@ -418,13 +483,13 @@ router.post('/catalogo/maquinas', (req, res) => {
    CONFIGURAÇÕES
 =============================================================== */
 router.get('/config', (req, res) => {
-  res.json({ sucesso: true, config: dbService.getConfig() });
+  res.json({ sucesso: true, config: dbService.getPublicConfig() });
 });
 
 router.post('/config', (req, res) => {
-  const novaConfig = req.body;
-  const salva = dbService.saveConfig(novaConfig);
-  res.json({ sucesso: true, config: salva });
+  const novaConfig = req.body || {};
+  dbService.saveConfig(novaConfig);
+  res.json({ sucesso: true, config: dbService.getPublicConfig() });
 });
 
 router.post('/config/testar-openrouter', async (req, res) => {
@@ -449,6 +514,179 @@ router.post('/config/testar-openrouter', async (req, res) => {
   }
 });
 
+router.post('/config/testar-meta', async (req, res) => {
+  try {
+    const { accessToken, phoneNumberId, apiVersion } = req.body || {};
+    const resultado = await metaWhatsappService.testConnection({
+      accessToken,
+      phoneNumberId,
+      apiVersion
+    });
+    if (!resultado.sucesso) {
+      return res.status(400).json(resultado);
+    }
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: 'Falha ao testar Meta WhatsApp API: ' + e.message });
+  }
+});
+
+/* ===============================================================
+   FACEBOOK LOGIN / EMBEDDED SIGNUP META WHATSAPP
+=============================================================== */
+router.get('/meta/auth', async (req, res) => {
+  try {
+    const state = await metaWhatsappService.getPublicAuthStateAsync();
+    res.json({ sucesso: true, ...state });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/hub/config', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.saveAndSyncHubConfig(req.body || {});
+    res.json({ sucesso: true, ...resultado });
+  } catch (e) {
+    res.status(400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/media/upload', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.uploadMedia(req.body || {});
+    res.json(resultado);
+  } catch (e) {
+    res.status(e.statusCode || 400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/messages/send', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.sendTextMessage(req.body || {});
+    res.json(resultado);
+  } catch (e) {
+    res.status(e.statusCode || 400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/messages/media', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.sendMediaMessage(req.body || {});
+    res.json(resultado);
+  } catch (e) {
+    res.status(e.statusCode || 400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/messages/template', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.sendTemplateMessage(req.body || {});
+    res.json(resultado);
+  } catch (e) {
+    res.status(e.statusCode || 400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/auth', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.processarFacebookAuth(req.body || {});
+    if (!resultado.sucesso) {
+      return res.status(400).json(resultado);
+    }
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: 'Falha no login Meta/Facebook: ' + e.message });
+  }
+});
+
+router.post('/meta/auth/selecionar', async (req, res) => {
+  try {
+    const { phoneNumberId } = req.body || {};
+    if (!phoneNumberId) {
+      return res.status(400).json({ sucesso: false, erro: 'phoneNumberId é obrigatório.' });
+    }
+    const resultado = await metaWhatsappService.selectActiveAccount(phoneNumberId);
+    if (!resultado.sucesso) {
+      return res.status(404).json(resultado);
+    }
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/auth/sync', async (req, res) => {
+  try {
+    const { phoneNumberId } = req.body || {};
+    const resultado = await metaWhatsappService.triggerCoexistenceSync(phoneNumberId);
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.delete('/meta/auth/:phoneNumberId', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.disconnectAccount(req.params.phoneNumberId);
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/meta/auth/ativar-manual', async (req, res) => {
+  try {
+    const resultado = await metaWhatsappService.ativarConexaoManual(req.body || {});
+    if (!resultado.sucesso) {
+      return res.status(400).json(resultado);
+    }
+    res.json(resultado);
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+/* ===============================================================
+   LISTA DE CONTATOS DE TESTE DO CHATBOT (WHITELIST)
+=============================================================== */
+router.get('/chatbot/contatos-teste', (req, res) => {
+  try {
+    res.json({ sucesso: true, ...dbService.getContatosTesteChatbot() });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/chatbot/contatos-teste', (req, res) => {
+  try {
+    const { nome, telefone } = req.body || {};
+    const dados = dbService.addContatoTesteChatbot({ nome, telefone });
+    res.json({ sucesso: true, ...dados });
+  } catch (e) {
+    res.status(400).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.patch('/chatbot/contatos-teste/modo', (req, res) => {
+  try {
+    const { ativo } = req.body || {};
+    const dados = dbService.setModoTesteChatbot(ativo);
+    res.json({ sucesso: true, ...dados });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.delete('/chatbot/contatos-teste/:id', (req, res) => {
+  try {
+    const dados = dbService.removeContatoTesteChatbot(req.params.id);
+    res.json({ sucesso: true, ...dados });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
 /* ===============================================================
    IA: PRÉVIA, TRIAGEM E REFINAMENTO
 =============================================================== */
@@ -465,7 +703,10 @@ router.post('/ia/gerar-previa', async (req, res) => {
       material,
       tratamentoTermico,
       durezaDesejada,
-      detalhesTermico
+      detalhesTermico,
+      possuiModelagem3D,
+      incluirModelagem3D,
+      detalhesModelagem3D
     } = req.body;
 
     if (!descricao || !descricao.trim()) {
@@ -483,7 +724,10 @@ router.post('/ia/gerar-previa', async (req, res) => {
       material,
       tratamentoTermico,
       durezaDesejada,
-      detalhesTermico
+      detalhesTermico,
+      possuiModelagem3D: Boolean(possuiModelagem3D),
+      incluirModelagem3D: Boolean(incluirModelagem3D),
+      detalhesModelagem3D: detalhesModelagem3D || ''
     });
 
     res.json(resultado);
@@ -515,6 +759,7 @@ router.get('/ia/aprendizado-stats', async (req, res) => {
   try {
     const ativo = dbService.isModeloAprendizagemAtivo();
     const validados = ativo ? await dbService.getOrcamentosValidadosParaTreino(50) : [];
+    const licoes = ativo ? await dbService.getLicoesAprendidas(20) : [];
     const orcs = await dbService.getOrcamentos();
     const comAjustes = orcs.filter(o => o.ajustadoManualmente && o.ajustesHumano?.houveAjustes);
 
@@ -524,6 +769,7 @@ router.get('/ia/aprendizado-stats', async (req, res) => {
       status: ativo ? 'ATIVADO' : 'DESATIVADO_NO_ENV',
       totalValidados: validados.length,
       totalComAjustesManuais: comAjustes.length,
+      totalLicoesAprendidas: licoes.length,
       ultimosAjustes: comAjustes.slice(0, 5).map(o => ({
         id: o.id,
         numero: o.numero,
@@ -532,6 +778,35 @@ router.get('/ia/aprendizado-stats', async (req, res) => {
         dataAtualizacao: o.dataAtualizacao || o.dataCriacao
       }))
     });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.get('/ia/licoes-aprendidas', async (req, res) => {
+  try {
+    const ativo = dbService.isModeloAprendizagemAtivo();
+    const licoes = ativo ? await dbService.getLicoesAprendidas(20) : [];
+    res.json({ sucesso: true, ativo, licoes });
+  } catch (e) {
+    res.status(500).json({ sucesso: false, erro: e.message });
+  }
+});
+
+router.post('/ia/analisar-aprendizado/:id', async (req, res) => {
+  try {
+    const orc = await dbService.getOrcamentoById(req.params.id);
+    if (!orc) {
+      return res.status(404).json({ sucesso: false, erro: 'Orçamento não encontrado' });
+    }
+    if (!orc.versaoOriginalIA) {
+      return res.status(400).json({
+        sucesso: false,
+        erro: 'Este orçamento não possui registro da 1ª versão gerada pela IA para comparação.'
+      });
+    }
+    const licao = await aiService.analisarDiferencasParaAprendizado(orc);
+    res.json({ sucesso: true, licao });
   } catch (e) {
     res.status(500).json({ sucesso: false, erro: e.message });
   }

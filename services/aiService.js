@@ -284,7 +284,7 @@ class AIService {
    * Reduz drasticamente o consumo de tokens de entrada ao enviar apenas máquinas
    * e insumos relevantes ao tipo de serviço identificado.
    */
-  filtrarCatalogoRelevante(setor, insumos, maquinas) {
+  filtrarCatalogoRelevante(setor, insumos, maquinas, incluirModelagem3D = false) {
     let maquinasFiltradas = [];
     let insumosFiltrados = [];
 
@@ -399,6 +399,13 @@ class AIService {
 
     if (maquinasFiltradas.length < 5) maquinasFiltradas = maquinas.slice(0, 15);
     if (insumosFiltrados.length < 8) insumosFiltrados = insumos.slice(0, 20);
+
+    if (incluirModelagem3D) {
+      const maq3d = maquinas.find(m => m.id === 'maq_modelagem_3d' || norm(m.nome).includes('modelagem 3d') || norm(m.nome).includes('cad/cam'));
+      if (maq3d && !maquinasFiltradas.some(m => m.id === maq3d.id || m.nome === maq3d.nome)) {
+        maquinasFiltradas = [maq3d, ...maquinasFiltradas];
+      }
+    }
 
     return { maquinasFiltradas, insumosFiltrados };
   }
@@ -570,6 +577,9 @@ class AIService {
     tratamentoTermico,
     durezaDesejada,
     detalhesTermico,
+    possuiModelagem3D = false,
+    incluirModelagem3D = false,
+    detalhesModelagem3D = '',
     temArquivos,
     apiKey,
     orcamentosHistorico = []
@@ -616,6 +626,7 @@ DADOS DA SOLICITAÇÃO TÉCNICA:
 - Prazo Solicitado: "${prazo || 'Padrão'}"
 - Material Informado pelo Cliente: "${material && material.trim() ? material : 'NÃO ESPECIFICADO'}"
 - Tratamento Térmico: "${tratamentoTermico || 'Nenhum'}" (Dureza: "${durezaDesejada || 'N/A'}", Detalhes: "${detalhesTermico || 'N/A'}")
+- Modelagem 3D: ${possuiModelagem3D ? 'Cliente já possui arquivo 3D' : (incluirModelagem3D ? `NÃO possui — INCLUIR Modelagem 3D no orçamento (${detalhesModelagem3D || 'levantamento e projeto CAD'})` : 'Não solicitada / não aplicável')}
 - Observações adicionais: "${observacoes || 'Nenhuma'}"
 - Possui arquivos/desenhos anexados: ${temArquivos ? 'SIM' : 'NÃO'}
 
@@ -802,7 +813,10 @@ Responda SOMENTE um JSON no formato:
     material,
     tratamentoTermico,
     durezaDesejada,
-    detalhesTermico
+    detalhesTermico,
+    possuiModelagem3D = false,
+    incluirModelagem3D = false,
+    detalhesModelagem3D = ''
   }) {
     const config = dbService.getConfig();
     const apiKey = config.openrouterApiKey;
@@ -810,9 +824,10 @@ Responda SOMENTE um JSON no formato:
     const todasMaquinas = dbService.getMaquinas();
     const qtd = Math.max(1, Number(quantidade) || 1);
 
-    // 0. Busca orçamentos históricos validados por humanos para aprendizado ativo (se ativo no .env)
+    // 0. Busca orçamentos históricos validados por humanos e lições aprendidas para aprendizado ativo (se ativo no .env)
     const aprendizadoAtivo = dbService.isModeloAprendizagemAtivo();
     const historicoValidados = aprendizadoAtivo ? await dbService.getOrcamentosValidadosParaTreino(15) : [];
+    const licoesRecentes = aprendizadoAtivo ? await dbService.getLicoesAprendidas(6) : [];
 
     // 1. Triagem, Roteamento e Consulta Rápida de Similaridade com JEV System One
     const triagem = await this.analisarComplexidadeComJev({
@@ -825,6 +840,9 @@ Responda SOMENTE um JSON no formato:
       tratamentoTermico,
       durezaDesejada,
       detalhesTermico,
+      possuiModelagem3D,
+      incluirModelagem3D,
+      detalhesModelagem3D,
       temArquivos: arquivos && arquivos.length > 0,
       apiKey,
       orcamentosHistorico: historicoValidados
@@ -848,6 +866,8 @@ Responda SOMENTE um JSON no formato:
           motivoJev: triagem.motivo_referencia || 'Similaridade técnica identificada pelo JEV',
           aprendizadoChave: triagem.aprendizado_chave || 'Replicar proporções de máquinas e insumos aprovados',
           ajustesPrevios: orcRef.ajustesHumano?.resumo || null,
+          resumoAprendizadoIA: orcRef.resumoAprendizadoIA?.resumoExecutivo || null,
+          regrasAprendizadas: orcRef.resumoAprendizadoIA?.regrasParaFuturo || [],
           maquinasAprovadas: orcRef.itensMaquina || [],
           insumosAprovados: orcRef.itensInsumo || []
         };
@@ -860,7 +880,7 @@ Responda SOMENTE um JSON no formato:
     // 2. Aplicação de Poda de Catálogo para economizar tokens
     let catalogoUso = { maquinasFiltradas: todasMaquinas, insumosFiltrados: todosInsumos };
     if (config.otimizarTokens) {
-      catalogoUso = this.filtrarCatalogoRelevante(triagem.setor_principal, todosInsumos, todasMaquinas);
+      catalogoUso = this.filtrarCatalogoRelevante(triagem.setor_principal, todosInsumos, todasMaquinas, incluirModelagem3D);
     }
 
     const nomesInsumosCatalogo = catalogoUso.insumosFiltrados.map(i => `${i.nome} [${i.unidade}] (R$ ${i.preco.toFixed(2)})`).join('; ');
@@ -873,6 +893,12 @@ Responda SOMENTE um JSON no formato:
       const maqsRefStr = (orcRef.itensMaquina || []).map(m => `  * ${m.nome || m.maquina}: ${m.horas}h (${m.descricao || ''})`).join('\n');
       const insRefStr = (orcRef.itensInsumo || []).map(i => `  * ${i.nome}: ${i.qtd} ${i.unidade || ''} (R$ ${Number(i.preco || 0).toFixed(2)})`).join('\n');
       const ajusteStr = orcRef.ajustesHumano?.resumo ? `\n- Ajustes que o orçamentista realizou no histórico: "${orcRef.ajustesHumano.resumo}"` : '';
+      const licaoRefStr = orcRef.resumoAprendizadoIA?.resumoExecutivo
+        ? `\n- Síntese de Aprendizado (V1 vs. Aprovado): ${orcRef.resumoAprendizadoIA.resumoExecutivo}` +
+          (Array.isArray(orcRef.resumoAprendizadoIA.regrasParaFuturo) && orcRef.resumoAprendizadoIA.regrasParaFuturo.length
+            ? `\n- Regras Aprendidas deste caso: ${orcRef.resumoAprendizadoIA.regrasParaFuturo.join(' | ')}`
+            : '')
+        : '';
 
       blocoAprendizadoJev = `
 ======================================================================
@@ -883,7 +909,7 @@ O roteador JEV identificou alta similaridade com o Orçamento #${orcRef.numero}:
 - Operações e Horas de Máquina que o Orçamentista Validou:
 ${maqsRefStr}
 - Insumos Validados pelo Engenheiro:
-${insRefStr}${ajusteStr}
+${insRefStr}${ajusteStr}${licaoRefStr}
 
 DIRETRIZ DE APRENDIZADO INDUSTRIAL:
 Considere os tempos, máquinas e consumos deste caso aprovado como PADRÃO OURO. Replique proporcionalmente para este novo serviço, evitando que o usuário precise fazer correções manuais novamente!
@@ -891,9 +917,27 @@ Considere os tempos, máquinas e consumos deste caso aprovado como PADRÃO OURO.
 `;
     }
 
+    let blocoLicoesAprendidas = '';
+    if (aprendizadoAtivo && licoesRecentes.length > 0) {
+      const linhasLicoes = licoesRecentes.map(l => {
+        const regras = Array.isArray(l.regrasParaFuturo) && l.regrasParaFuturo.length > 0
+          ? ` | Regras: ${l.regrasParaFuturo.join('; ')}`
+          : '';
+        return `• [Orç. #${l.numero || '---'} — ${l.categoriaAprendizado || 'GERAL'}] ${l.resumoExecutivo}${regras}`;
+      }).join('\n');
+
+      blocoLicoesAprendidas = `
+======================================================================
+LIÇÕES APRENDIDAS RECENTES DO ORÇAMENTISTA (EVITAR REPETIR ERROS DA 1ª VERSÃO):
+A análise comparativa entre a 1ª versão gerada pela IA e a versão final aprovada pelo orçamentista gerou estas correções recorrentes que VOCÊ DEVE RESPEITAR:
+${linhasLicoes}
+======================================================================
+`;
+    }
+
     const promptSistema = `Você é o Orçamentista Técnico Sênior e Engenheiro Chefe de Produção da Nardelli Usinagem & Caldeiraria (Aracaju/SE).
 Sua missão é calcular com rigor de engenharia mecânica e precisão comercial os insumos, matérias-primas e horas de máquina necessárias para executar o serviço solicitado, escolhendo a máquina ideal com base nas dimensões da peça e operações necessárias.
-${blocoAprendizadoJev}
+${blocoAprendizadoJev}${blocoLicoesAprendidas}
 CATÁLOGO DE MÁQUINAS DISPONÍVEIS NA OFICINA COM DIMENSÕES E CAPACIDADES:
 ${nomesMaquinasCatalogo}
 
@@ -940,6 +984,11 @@ REGRAS DE ENGENHARIA PARA SELEÇÃO DA MÁQUINA IDEAL (CONFORME DIMENSÕES E CAR
      * PEÇAS RETANGULARES, PRISMÁTICAS, MARTELINHOS OU BLOCOS (ex: peças de largura 10mm e altura 29,45mm): NUNCA especifique tarugo redondo gigante (ex: Ø45mm) para transformar 80% do metal em cavaco! Especifique **BARRA CHATA** ou **BARRA QUADRADA** comercial com sobremetal enxuto de 2 a 4mm (ex: para martelinho 29,45x10mm, usar **BARRA CHATA SAE 1045 1.1/4" x 1/2"** [~31,75 x 12,7mm] ou 32x12mm, que pesa apenas ~3,1 kg/m).
      * PORCAS E FIXADORES SEXTAVADOS (ex: porca chave 19,05mm / 3/4"): OBRIGATÓRIO usar **BARRA SEXTAVADA** comercial (ex: Barra Sextavada SAE 1045 3/4", que pesa ~2,04 kg/m), economizando material e tempo de fresamento.
      * CÁLCULO RIGOROSO DE PESO DE METAL: Calcule o comprimento unitário de corte da barra (comprimento da peça + 3 a 5mm de serra), multiplique pelo peso linear em kg/m e pela quantidade total de peças. Jamais superestime a quantidade de metal bruto além da geometria real!
+10. MODELAGEM 3D / PROJETO CAD (QUANDO CLIENTE NÃO POSSUI):
+   - Se o cliente JÁ POSSUI modelagem 3D pronta: NÃO adicione horas extras de modelagem 3D.
+   - Se o cliente NÃO POSSUI modelagem 3D e marcou para INCLUIR Modelagem 3D no orçamento:
+     * É OBRIGATÓRIO incluir como primeira etapa (ordemProducao: 1) o recurso "Engenharia / Modelagem 3D (CAD/CAM)" com tempo realista de levantamento dimensional e modelagem paramétrica 3D (ex: 1h a 4h conforme complexidade da peça; serviço único de engenharia, não multiplicado por unidade em lote repetitivo).
+     * Cite explicitamente na descrição da operação e em "observacoesTecnicas" a inclusão da Modelagem 3D.
 
 
 DIRETRIZES TÉCNICAS ADICIONAIS:
@@ -1014,7 +1063,7 @@ Responda EXCLUSIVAMENTE um objeto JSON válido (sem texto introdutório, sem mar
   "materialOrigem": "cliente | catalogo | sugerido_ideal",
   "justificativaMaterial": "string (justificativa técnica clara da escolha desta matéria-prima)",
   "insumos": [
-    { "nome": "string", "qtd": number, "unidade": "string", "preco": number }
+    { "nome": "string", "qtdPorPeca": number, "qtd": number, "unidade": "string", "preco": number }
   ],
   "operacoes": [
     {
@@ -1047,6 +1096,8 @@ Responda EXCLUSIVAMENTE um objeto JSON válido (sem texto introdutório, sem mar
 - Tratamento Térmico Requerido: ${tratamentoTermico || 'Nenhum'}
 - Dureza Desejada: ${durezaDesejada || 'N/A'}
 - Detalhes do Térmico: ${detalhesTermico || 'N/A'}
+- Modelagem 3D: ${possuiModelagem3D ? 'Cliente JÁ POSSUI o modelo 3D (não cobrar modelagem 3D)' : (incluirModelagem3D ? `Cliente NÃO POSSUI — OBRIGATÓRIO INCLUIR serviço de Modelagem 3D ("Engenharia / Modelagem 3D (CAD/CAM)") neste orçamento. Detalhes: ${detalhesModelagem3D || 'Levantamento dimensional e modelagem 3D'}` : 'Cliente não informou/não solicitou modelagem 3D')}
+- IMPORTANTE SOBRE INSUMOS: Para cada insumo, informe "qtdPorPeca" (quanto consome em 1 peça) e "qtd" (total para o lote de ${qtd} peça(s)).
 - Observações adicionais do cliente/orçamentista: ${observacoes || 'Nenhuma'}`;
 
         const userContent = [
@@ -1074,10 +1125,11 @@ Responda EXCLUSIVAMENTE um objeto JSON válido (sem texto introdutório, sem mar
           origemIA: usouFallback ? `OpenRouter Fallback (${nomeAmigavel})` : `OpenRouter Live (${nomeAmigavel})`,
           triagemJev: triagem,
           referenciaHistorica,
+          licoesAplicadasCount: licoesRecentes.length,
           modelo: modeloUsado,
           usouFallback: !!usouFallback,
           avisoFallback: usouFallback ? `O modelo principal (${this.normalizarIdModelo(modeloEscolhido)}) oscilou no provedor (${motivoFallback}). O cálculo foi concluído com sucesso pelo modelo de contingência (${nomeAmigavel}).` : null,
-          resultado: this.normalizarResultadoComCatalogo(parsed, todosInsumos, todasMaquinas),
+          resultado: this.normalizarResultadoComCatalogo(parsed, todosInsumos, todasMaquinas, qtd, { incluirModelagem3D, detalhesModelagem3D }),
           tokensUtilizados: usage || null
         };
       } catch (err) {
@@ -1112,7 +1164,7 @@ DIRETRIZES:
 
 Responda EXCLUSIVAMENTE um JSON no formato:
 {
-  "insumos": [{ "nome": "string", "qtd": number, "unidade": "string", "preco": number }],
+  "insumos": [{ "nome": "string", "qtdPorPeca": number, "qtd": number, "unidade": "string", "preco": number }],
   "operacoes": [{ "peca": "string", "etapa": number, "ordemProducao": number, "maquina": "string", "descricao": "string", "regime": "normal|h50|h100", "horas": number, "valorHora": number }],
   "moEscritorio": number,
   "justificativaAjuste": "resumo claro do que foi modificado",
@@ -1159,7 +1211,16 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
           modelo: modeloUsado,
           usouFallback: !!usouFallback,
           avisoFallback: usouFallback ? `O modelo principal oscilou no provedor (${motivoFallback}). O recálculo foi concluído pelo modelo de contingência (${nomeAmigavel}).` : null,
-          resultado: this.normalizarResultadoComCatalogo(parsed, todosInsumos, todasMaquinas)
+          resultado: this.normalizarResultadoComCatalogo(
+            parsed,
+            todosInsumos,
+            todasMaquinas,
+            orcamentoAtual.quantidadePecas || 1,
+            {
+              incluirModelagem3D: !!orcamentoAtual.incluirModelagem3D,
+              detalhesModelagem3D: orcamentoAtual.detalhesModelagem3D || ''
+            }
+          )
         };
       } catch (e) {
         console.error('Erro ao refinar com IA:', e);
@@ -1171,10 +1232,22 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
   }
 
   /**
+   * Converte horas decimais para objeto { horasInteiras, minutos }
+   */
+  converterDecimalParaHM(dec) {
+    const totalMin = Math.max(0, Math.round((Number(dec) || 0) * 60));
+    return {
+      horasInteiras: Math.floor(totalMin / 60),
+      minutos: totalMin % 60
+    };
+  }
+
+  /**
    * Vincula nomes sugeridos aos preços oficiais do catálogo da Nardelli
    */
-  normalizarResultadoComCatalogo(resultado, todosInsumos, todasMaquinas) {
+  normalizarResultadoComCatalogo(resultado, todosInsumos, todasMaquinas, qtdPecas = 1, opcoes = {}) {
     const norm = s => (s || '').trim().toLowerCase();
+    const qtdLote = Math.max(1, Number(qtdPecas) || 1);
 
     const insumosNormalizados = (resultado.insumos || []).map(it => {
       const match = todosInsumos.find(i => norm(i.nome) === norm(it.nome) || norm(i.nome).includes(norm(it.nome)) || norm(it.nome).includes(norm(i.nome)));
@@ -1215,11 +1288,30 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
         }
       }
 
-      const qtdFinal = Number(it.qtd || it.quantidade || 1);
+      const rawTotal = Number(it.qtd || it.quantidade);
+      const rawPorPeca = Number(it.qtdPorPeca || it.usoPorPeca);
+      let qtdPorPeca;
+      let qtdFinal;
+
+      if (!isNaN(rawPorPeca) && rawPorPeca > 0 && !isNaN(rawTotal) && rawTotal > 0) {
+        qtdPorPeca = Number(rawPorPeca.toFixed(4));
+        qtdFinal = Number(rawTotal.toFixed(3));
+      } else if (!isNaN(rawPorPeca) && rawPorPeca > 0) {
+        qtdPorPeca = Number(rawPorPeca.toFixed(4));
+        qtdFinal = Number((qtdPorPeca * qtdLote).toFixed(3));
+      } else if (!isNaN(rawTotal) && rawTotal > 0) {
+        qtdFinal = Number(rawTotal.toFixed(3));
+        qtdPorPeca = Number((qtdFinal / qtdLote).toFixed(4));
+      } else {
+        qtdPorPeca = 1;
+        qtdFinal = qtdLote;
+      }
 
       return {
         nome: match ? match.nome : it.nome,
+        qtdPorPeca,
         qtd: qtdFinal,
+        qtdTotalManual: false,
         unidade: unidFinal,
         preco: Number(precoItem.toFixed(4)),
         subtotal: Number((qtdFinal * precoItem).toFixed(2))
@@ -1236,7 +1328,9 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
       }
       if (!match && opNome) {
         // Busca por modelo ou palavra-chave específica
-        if (opNome.includes('cw800') || opNome.includes('pesado') || opNome.includes('4000') || opNome.includes('800')) {
+        if (opNome.includes('modelagem') || opNome.includes('cad') || opNome.includes('3d') || opNome.includes('projeto')) {
+          match = todasMaquinas.find(m => m.id === 'maq_modelagem_3d' || norm(m.nome).includes('modelagem 3d') || norm(m.nome).includes('cad'));
+        } else if (opNome.includes('cw800') || opNome.includes('pesado') || opNome.includes('4000') || opNome.includes('800')) {
           match = todasMaquinas.find(m => m.id === 'maq_torno_800_4000');
         } else if (opNome.includes('romi i40') || opNome.includes('i40-a') || opNome.includes('650 x 2200')) {
           match = todasMaquinas.find(m => m.id === 'maq_torno_650_2200_romi');
@@ -1280,12 +1374,12 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
       }
 
       const regime = ['normal', 'h50', 'h100'].includes(op.regime) ? op.regime : 'normal';
-      let valorHora = match ? match[regime] : (Number(op.valorHora) || 25.0);
-      let multiplicador = 1.0; // match já possui taxa calculada para o regime
-      if (!match) {
-        multiplicador = regime === 'h50' ? 1.5 : regime === 'h100' ? 2.0 : 1.0;
-      }
-      const horas = Number(op.horas || op.horasEstimadas || 1);
+      const valorHora = match ? match.normal : (Number(op.valorHora) || (opNome.includes('modelagem') ? 35.0 : 25.0));
+      const multiplicador = regime === 'h50' ? 1.5 : (regime === 'h100' ? 2.0 : 1.0);
+      const horas = Number((Number(op.horas || op.horasEstimadas || 1)).toFixed(4));
+      const horasUnitarias = Number((horas / qtdLote).toFixed(4));
+      const hmTotal = this.converterDecimalParaHM(horas);
+      const hmUnit = this.converterDecimalParaHM(horasUnitarias);
       const peca = (op.peca && op.peca.trim()) ? op.peca.trim() : (resultado.ehConjuntoMultiPecas ? `Peça ${idx + 1}` : 'Peça Principal');
       const etapa = Number(op.etapa) || (idx + 1);
       const ordemProducao = Number(op.ordemProducao) || ordemSeq++;
@@ -1294,14 +1388,51 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
         peca,
         etapa,
         ordemProducao,
-        nome: match ? match.nome : (op.maquina || 'MÁQUINA/BANCADA'),
+        nome: match ? match.nome : (op.maquina || (opNome.includes('modelagem') ? 'Engenharia / Modelagem 3D (CAD/CAM)' : 'MÁQUINA/BANCADA')),
         descricao: op.descricao || 'Operação técnica de usinagem/manutenção',
         regime,
         horas,
+        horasInteiras: hmTotal.horasInteiras,
+        minutos: hmTotal.minutos,
+        horasUnitarias,
+        horasUnitariasInteiras: hmUnit.horasInteiras,
+        minutosUnitarios: hmUnit.minutos,
         valorHora,
-        subtotal: Number((horas * valorHora * (match ? 1 : multiplicador)).toFixed(2))
+        subtotal: Number((horas * valorHora * multiplicador).toFixed(2))
       };
     });
+
+    // Garante inclusão de Modelagem 3D caso solicitado e não incluído pela IA
+    if (opcoes.incluirModelagem3D && !operacoesNormalizadas.some(o => /modelagem|cad|3d/i.test(o.nome))) {
+      const maq3d = todasMaquinas.find(m => m.id === 'maq_modelagem_3d' || norm(m.nome).includes('modelagem 3d'));
+      const valorHora3d = maq3d ? maq3d.normal : 35.0;
+      const horas3d = 1.5;
+      const horasUnit3d = Number((horas3d / qtdLote).toFixed(4));
+      const hmTotal3d = this.converterDecimalParaHM(horas3d);
+      const hmUnit3d = this.converterDecimalParaHM(horasUnit3d);
+
+      operacoesNormalizadas.forEach(o => {
+        o.ordemProducao = (o.ordemProducao || 1) + 1;
+      });
+      operacoesNormalizadas.unshift({
+        peca: resultado.ehConjuntoMultiPecas ? 'Engenharia / Projeto 3D' : 'Peça Principal',
+        etapa: 1,
+        ordemProducao: 1,
+        nome: maq3d ? maq3d.nome : 'Engenharia / Modelagem 3D (CAD/CAM)',
+        descricao: opcoes.detalhesModelagem3D
+          ? `Levantamento dimensional e modelagem sólida 3D CAD/CAM (${opcoes.detalhesModelagem3D})`
+          : 'Levantamento dimensional, desenho técnico 2D e modelagem sólida 3D CAD/CAM para fabricação',
+        regime: 'normal',
+        horas: horas3d,
+        horasInteiras: hmTotal3d.horasInteiras,
+        minutos: hmTotal3d.minutos,
+        horasUnitarias: horasUnit3d,
+        horasUnitariasInteiras: hmUnit3d.horasInteiras,
+        minutosUnitarios: hmUnit3d.minutos,
+        valorHora: valorHora3d,
+        subtotal: Number((horas3d * valorHora3d).toFixed(2))
+      });
+    }
 
     // Ordena as operações respeitando a sequência cronológica global
     operacoesNormalizadas.sort((a, b) => (a.ordemProducao || 0) - (b.ordemProducao || 0));
@@ -1353,7 +1484,9 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
       material = '',
       tratamentoTermico = 'Nenhum',
       durezaDesejada = '',
-      detalhesTermico = ''
+      detalhesTermico = '',
+      incluirModelagem3D = false,
+      detalhesModelagem3D = ''
     } = extras;
 
     const qtd = Math.max(1, Number(quantidade) || 1);
@@ -1959,12 +2092,151 @@ INSTRUÇÃO DE AJUSTE / RECÁLCULO DO USUÁRIO:
       materialDefinido,
       materialOrigem,
       justificativaMaterial,
-      insumos,
-      operacoes,
+      insumos: insumos.map(i => ({ ...i, qtdPorPeca: Number((Number(i.qtd || 1) / qtd).toFixed(4)), qtdTotalManual: false })),
+      operacoes: extras.incluirModelagem3D && !operacoes.some(o => /modelagem|cad|3d/i.test(o.nome))
+        ? [{
+            nome: "Engenharia / Modelagem 3D (CAD/CAM)",
+            descricao: extras.detalhesModelagem3D ? `Levantamento dimensional e modelagem 3D (${extras.detalhesModelagem3D})` : "Levantamento dimensional e modelagem sólida 3D CAD/CAM",
+            regime: "normal",
+            horas: 1.5,
+            valorHora: 35.0,
+            subtotal: 52.5
+          }, ...operacoes]
+        : operacoes,
       moEscritorio: 0,
-      observacoesTecnicas: `Proposta técnica Nardelli Usinagem. Lote de ${qtd} peça(s). Matéria-prima: ${materialDefinido} (${origemRotulo}). ${justificativaMaterial}${temTermico ? ' Tratamento térmico: ' + tratamentoTermico + (durezaDesejada ? ' (' + durezaDesejada + ')' : '') : ''}.`,
+      observacoesTecnicas: `Proposta técnica Nardelli Usinagem. Lote de ${qtd} peça(s). Matéria-prima: ${materialDefinido} (${origemRotulo}). ${justificativaMaterial}${temTermico ? ' Tratamento térmico: ' + tratamentoTermico + (durezaDesejada ? ' (' + durezaDesejada + ')' : '') : ''}${extras.incluirModelagem3D ? ' Inclui Modelagem 3D CAD/CAM.' : ''}.`,
       diasEntregaEstimados: diasEstimados
     };
+  }
+
+  /**
+   * Usa modelo econômico (barato) para comparar a 1ª versão da IA com a versão final aprovada
+   * e gerar um resumo estruturado de lições aprendidas para evitar erros futuros.
+   */
+  async analisarDiferencasParaAprendizado(orcamento) {
+    if (!orcamento || !orcamento.versaoOriginalIA) {
+      return null;
+    }
+
+    const config = dbService.getConfig();
+    const apiKey = config.openrouterApiKey || process.env.OPENROUTER_API_KEY || '';
+    const modeloBarato = config.modeloAnaliseAprendizado || config.modeloRoteador || 'google/gemini-2.5-flash';
+    const diffBruto = dbService.calcularAjustesHumanos(orcamento.versaoOriginalIA, orcamento);
+
+    if (!diffBruto || !diffBruto.houveAjustes) {
+      const licaoSemAjuste = {
+        numero: orcamento.numero,
+        descricao: orcamento.descricaoServico || '',
+        categoria: orcamento.categoriaPeca || '',
+        material: orcamento.materialDefinido || orcamento.materialPeca || '',
+        resumoExecutivo: `Orçamento #${orcamento.numero || ''} aprovado integralmente sem alterações sobre a 1ª versão gerada pela IA.`,
+        padroesErro: [],
+        regrasParaFuturo: [
+          `Manter a referência de máquinas, tempos e insumos validada no orçamento #${orcamento.numero || ''} para peças similares.`
+        ],
+        categoriaAprendizado: 'GERAL',
+        modeloUsado: 'deterministico',
+        houveAjustes: false,
+        geradoEm: new Date().toISOString()
+      };
+      return await dbService.salvarLicaoAprendida(orcamento.id, licaoSemAjuste);
+    }
+
+    const resumoFallback = {
+      numero: orcamento.numero,
+      descricao: orcamento.descricaoServico || '',
+      categoria: orcamento.categoriaPeca || '',
+      material: orcamento.materialDefinido || orcamento.materialPeca || '',
+      resumoExecutivo: `O orçamentista ajustou a 1ª versão da IA no orçamento #${orcamento.numero || ''}: ${diffBruto.resumo}.`,
+      padroesErro: diffBruto.itensModificados.slice(0, 3),
+      regrasParaFuturo: diffBruto.itensModificados.slice(0, 3).map(item => `Considerar na próxima geração: ${item}.`),
+      categoriaAprendizado: 'GERAL',
+      modeloUsado: 'heuristica_local',
+      houveAjustes: true,
+      deltaTotalFinanceiro: diffBruto.deltaTotalFinanceiro,
+      geradoEm: new Date().toISOString()
+    };
+
+    if (!apiKey) {
+      return await dbService.salvarLicaoAprendida(orcamento.id, resumoFallback);
+    }
+
+    try {
+      const promptSistema = `Você é um Auditor Técnico de Orçamentos Industriais da Nardelli Usinagem.
+Sua tarefa é comparar a 1ª VERSÃO gerada automaticamente pela IA com a VERSÃO FINAL APROVADA pelo orçamentista humano, identificar o padrão de erro/desvio da 1ª versão e gerar um resumo curto e acionável para evitar repetir os mesmos erros no futuro.
+
+RETORNE EXCLUSIVAMENTE UM JSON VÁLIDO NO FORMATO:
+{
+  "resumo_executivo": "2 a 3 frases objetivas explicando o que a IA estimou errado na V1 e o que o orçamentista corrigiu na versão aprovada.",
+  "padroes_erro": ["até 3 erros concretos cometidos pela IA na V1"],
+  "regras_para_futuro": ["até 3 regras práticas e numéricas para a IA aplicar em futuros orçamentos similares"],
+  "categoria_aprendizado": "TEMPOS_MAQUINA | MATERIAIS_INSUMOS | SELECAO_MAQUINA | MODELAGEM_3D | MARGEM_COMERCIAL | GERAL"
+}`;
+
+      const v1Resumo = {
+        itensInsumo: (orcamento.versaoOriginalIA.itensInsumo || []).map(i => ({ nome: i.nome, qtdPorPeca: i.qtdPorPeca, qtd: i.qtd, unidade: i.unidade, preco: i.preco })),
+        itensMaquina: (orcamento.versaoOriginalIA.itensMaquina || []).map(m => ({ nome: m.nome, regime: m.regime, horas: m.horas, tempo: dbService.formatarHorasMinutos(m.horas), valorHora: m.valorHora })),
+        moEscritorio: orcamento.versaoOriginalIA.moEscritorio || 0,
+        totalFinal: orcamento.versaoOriginalIA.totais?.totalFinal || 0
+      };
+
+      const finalResumo = {
+        itensInsumo: (orcamento.itensInsumo || []).map(i => ({ nome: i.nome, qtdPorPeca: i.qtdPorPeca, qtd: i.qtd, unidade: i.unidade, preco: i.preco })),
+        itensMaquina: (orcamento.itensMaquina || []).map(m => ({ nome: m.nome, regime: m.regime, horas: m.horas, tempo: dbService.formatarHorasMinutos(m.horas), valorHora: m.valorHora })),
+        moEscritorio: orcamento.moEscritorio || 0,
+        margensPersonalizadas: orcamento.margensPersonalizadas || null,
+        totalFinal: orcamento.totais?.totalFinal || 0
+      };
+
+      const promptUsuario = `ORÇAMENTO #${orcamento.numero || ''}
+- Peça/Serviço: "${orcamento.descricaoServico || ''}"
+- Categoria: "${orcamento.categoriaPeca || 'Usinagem Geral'}"
+- Quantidade: ${orcamento.quantidadePecas || 1} ${orcamento.unidadePeca || 'PÇ'}
+- Material: "${orcamento.materialDefinido || orcamento.materialPeca || 'N/A'}"
+- Modelagem 3D incluída: ${orcamento.incluirModelagem3D ? 'SIM' : 'NÃO'}
+- Tratamento Térmico: "${orcamento.tratamentoTermico || 'Nenhum'}"
+
+1ª VERSÃO GERADA PELA IA:
+${JSON.stringify(v1Resumo, null, 2)}
+
+VERSÃO FINAL APROVADA PELO ORÇAMENTISTA:
+${JSON.stringify(finalResumo, null, 2)}
+
+DIFERENÇAS DETECTADAS AUTOMATICAMENTE:
+${diffBruto.itensModificados.map(d => `- ${d}`).join('\n')}`;
+
+      const { parsed, modeloUsado } = await this.executarChamadaOpenRouterComFallback({
+        apiKey,
+        modeloPrincipal: modeloBarato,
+        modeloFallback: config.modeloRoteador || 'google/gemini-2.5-flash',
+        temperature: 0.1,
+        timeoutMs: 30000,
+        messages: [
+          { role: 'system', content: promptSistema },
+          { role: 'user', content: promptUsuario }
+        ]
+      });
+
+      const licaoIA = {
+        numero: orcamento.numero,
+        descricao: orcamento.descricaoServico || '',
+        categoria: orcamento.categoriaPeca || '',
+        material: orcamento.materialDefinido || orcamento.materialPeca || '',
+        resumoExecutivo: parsed.resumo_executivo || resumoFallback.resumoExecutivo,
+        padroesErro: Array.isArray(parsed.padroes_erro) ? parsed.padroes_erro.slice(0, 4) : resumoFallback.padroesErro,
+        regrasParaFuturo: Array.isArray(parsed.regras_para_futuro) ? parsed.regras_para_futuro.slice(0, 4) : resumoFallback.regrasParaFuturo,
+        categoriaAprendizado: parsed.categoria_aprendizado || 'GERAL',
+        modeloUsado: modeloUsado || modeloBarato,
+        houveAjustes: true,
+        deltaTotalFinanceiro: diffBruto.deltaTotalFinanceiro,
+        geradoEm: new Date().toISOString()
+      };
+
+      return await dbService.salvarLicaoAprendida(orcamento.id, licaoIA);
+    } catch (err) {
+      console.warn('[AI Aprendizado] Falha ao gerar resumo com modelo econômico, usando síntese local:', err.message);
+      return await dbService.salvarLicaoAprendida(orcamento.id, resumoFallback);
+    }
   }
 }
 

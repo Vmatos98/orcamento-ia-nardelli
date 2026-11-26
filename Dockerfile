@@ -4,8 +4,8 @@
 # ==============================================================
 FROM node:20-alpine
 
-# Fuso horário oficial do Brasil (Nordeste / Aracaju - GMT-3)
-RUN apk add --no-cache tzdata
+# Fuso horário oficial do Brasil (Nordeste / Aracaju - GMT-3) e FFmpeg para pipeline de vídeo do Chatbot
+RUN apk add --no-cache tzdata ffmpeg
 ENV TZ=America/Maceio
 
 # Diretório da aplicação

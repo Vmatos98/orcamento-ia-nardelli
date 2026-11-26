@@ -26,6 +26,7 @@ function fmt(v) { return (isNaN(v) ? 0 : v).toLocaleString('pt-BR', { style: 'cu
 const fmtMoeda = fmt;
 function escapeAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 function escapeHTML(s) { return escapeAttr(s); }
+function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val !== undefined && val !== null ? val : ''; }
 
 function avisar(msg) {
   const el = document.getElementById('toast');
@@ -57,18 +58,113 @@ function showTab(id) {
 }
 
 /* ---------------------------------------------------------------
+   HELPERS DE TEMPO (HORAS & MINUTOS) E MODELAGEM 3D
+--------------------------------------------------------------- */
+function decimalParaHorasMinutos(dec) {
+  const totalMin = Math.max(0, Math.round((Number(dec) || 0) * 60));
+  return {
+    h: Math.floor(totalMin / 60),
+    m: totalMin % 60
+  };
+}
+
+function horasMinutosParaDecimal(h, m) {
+  const horasInt = Math.max(0, Math.floor(num(h)));
+  const minInt = Math.max(0, Math.round(num(m)));
+  const totalMin = horasInt * 60 + minInt;
+  return Number((totalMin / 60).toFixed(4));
+}
+
+function formatarHorasMinutosTexto(dec) {
+  const { h, m } = decimalParaHorasMinutos(dec);
+  if (h > 0 && m > 0) return `${h}h ${m}min`;
+  if (h > 0) return `${h}h`;
+  return `${m}min`;
+}
+
+function normalizarParHM(hEl, mEl) {
+  if (!hEl || !mEl) return 0;
+  let h = Math.max(0, Math.floor(num(hEl.value)));
+  let m = Math.max(0, Math.round(num(mEl.value)));
+  if (m >= 60) {
+    h += Math.floor(m / 60);
+    m = m % 60;
+  }
+  hEl.value = h;
+  mEl.value = m;
+  return Number(((h * 60 + m) / 60).toFixed(4));
+}
+
+function aoAlterarPossuiModelagem3D(val) {
+  const blocoIncluir = document.getElementById('blocoIncluirModelagem3D');
+  const badgePossui = document.getElementById('badgePossuiModelagem3D');
+  const chkIncluir = document.getElementById('incluirModelagem3D');
+  const jaPossui = val === 'sim';
+
+  if (blocoIncluir) blocoIncluir.style.display = jaPossui ? 'none' : 'flex';
+  if (badgePossui) badgePossui.style.display = jaPossui ? 'inline-block' : 'none';
+  if (jaPossui && chkIncluir) chkIncluir.checked = false;
+}
+
+/* ---------------------------------------------------------------
    LINHAS DE TABELA — ORÇAMENTO
 --------------------------------------------------------------- */
 function insumoRowHTML(d) {
-  d = Object.assign({ nome: '', qtd: 1, unidade: 'UN', preco: 0 }, d);
+  d = Object.assign({ nome: '', qtd: 1, qtdPorPeca: null, qtdTotalManual: false, unidade: 'UN', preco: 0 }, d);
+  const qtdGeral = Math.max(1, num(document.getElementById('quantidadePecas')?.value) || 1);
+  let qtdPorPeca = (d.qtdPorPeca !== undefined && d.qtdPorPeca !== null && !isNaN(Number(d.qtdPorPeca)))
+    ? Number(d.qtdPorPeca)
+    : Number(((Number(d.qtd) || 1) / qtdGeral).toFixed(4));
+  let qtdTotal = (d.qtd !== undefined && d.qtd !== null && !isNaN(Number(d.qtd)))
+    ? Number(d.qtd)
+    : Number((qtdPorPeca * qtdGeral).toFixed(3));
+  const isManual = Boolean(d.qtdTotalManual);
+
   return '<tr>' +
     '<td><input list="lista-insumos" class="nome" value="' + escapeAttr(d.nome) + '" placeholder="Selecione ou digite o material/insumo..." onchange="onNomeInsumoChange(this)"></td>' +
-    '<td><input type="number" step="0.01" class="qtd num" value="' + d.qtd + '" oninput="calcularTotais()"></td>' +
     '<td><input list="lista-unidades-insumos" class="unidade" value="' + escapeAttr(d.unidade || 'UN') + '" style="text-align:center; text-transform:uppercase;" placeholder="KG, PÇ..." onchange="this.value = this.value.toUpperCase(); calcularTotais();"></td>' +
     '<td><input type="number" step="0.01" class="preco num" value="' + d.preco + '" placeholder="0,00" oninput="calcularTotais()" onchange="onPrecoInsumoChange(this)"></td>' +
+    '<td>' +
+    '<input type="number" step="0.001" min="0" class="qtdPorPeca num" value="' + qtdPorPeca + '" title="Quantidade utilizada por cada peça" oninput="onInsumoQtdPorPecaChange(this)">' +
+    '<div class="ins-meta-hint ins-custo-peca">R$ 0,00 / pç</div>' +
+    '</td>' +
+    '<td>' +
+    '<input type="number" step="0.01" min="0" class="qtd num" value="' + qtdTotal + '" data-manual="' + (isManual ? 'true' : 'false') + '" title="Quantidade total decidida para o orçamento" oninput="onInsumoQtdTotalChange(this)">' +
+    '<div class="ins-meta-hint ins-qtd-hint"></div>' +
+    '</td>' +
     '<td class="subtotal num">R$ 0,00</td>' +
     '<td style="text-align:center;"><button type="button" class="rm" onclick="this.closest(\'tr\').remove(); calcularTotais();">✕</button></td>' +
-  '</tr>';
+    '</tr>';
+}
+
+function onInsumoQtdPorPecaChange(inputEl) {
+  const tr = inputEl.closest('tr');
+  if (!tr) return;
+  const qtdPorPeca = num(inputEl.value);
+  const qtdGeral = Math.max(1, num(document.getElementById('quantidadePecas')?.value) || 1);
+  const inputTotal = tr.querySelector('.qtd');
+  if (inputTotal && inputTotal.dataset.manual !== 'true') {
+    inputTotal.value = Number((qtdPorPeca * qtdGeral).toFixed(3));
+  }
+  calcularTotais();
+}
+
+function onInsumoQtdTotalChange(inputEl) {
+  inputEl.dataset.manual = 'true';
+  calcularTotais();
+}
+
+function sincronizarQtdTotalInsumo(btnEl) {
+  const tr = btnEl.closest('tr');
+  if (!tr) return;
+  const qtdPorPeca = num(tr.querySelector('.qtdPorPeca')?.value);
+  const qtdGeral = Math.max(1, num(document.getElementById('quantidadePecas')?.value) || 1);
+  const inputTotal = tr.querySelector('.qtd');
+  if (inputTotal) {
+    inputTotal.dataset.manual = 'false';
+    inputTotal.value = Number((qtdPorPeca * qtdGeral).toFixed(3));
+  }
+  calcularTotais();
 }
 
 function getQtdParaPeca(nomePeca) {
@@ -87,54 +183,87 @@ function getQtdParaPeca(nomePeca) {
   return qtdGeral;
 }
 
-function onHorasUnitariasChange(inputEl) {
+function onTempoUnitarioChange(inputEl, normalizar = false) {
   const tr = inputEl.closest('tr');
   if (!tr) return;
-  const hUnit = num(inputEl.value);
+  const uH = tr.querySelector('.horasUnitH');
+  const uM = tr.querySelector('.horasUnitM');
+  const tH = tr.querySelector('.horasTotalH');
+  const tM = tr.querySelector('.horasTotalM');
+  if (!uH || !uM || !tH || !tM) return;
+
+  const hUnit = normalizar
+    ? normalizarParHM(uH, uM)
+    : horasMinutosParaDecimal(uH.value, uM.value);
+
   const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
   const qtd = getQtdParaPeca(pecaNome);
-  const inputTotal = tr.querySelector('.horas');
-  if (inputTotal) {
-    const hTotal = Number((hUnit * qtd).toFixed(2));
-    inputTotal.value = hTotal;
-  }
+  const hTotal = Number((hUnit * qtd).toFixed(4));
+  const hmTotal = decimalParaHorasMinutos(hTotal);
+  tH.value = hmTotal.h;
+  tM.value = hmTotal.m;
   calcularTotais();
 }
 
-function onHorasTotaisChange(inputEl) {
+function onTempoTotalChange(inputEl, normalizar = false) {
   const tr = inputEl.closest('tr');
   if (!tr) return;
-  const hTotal = num(inputEl.value);
+  const uH = tr.querySelector('.horasUnitH');
+  const uM = tr.querySelector('.horasUnitM');
+  const tH = tr.querySelector('.horasTotalH');
+  const tM = tr.querySelector('.horasTotalM');
+  if (!uH || !uM || !tH || !tM) return;
+
+  const hTotal = normalizar
+    ? normalizarParHM(tH, tM)
+    : horasMinutosParaDecimal(tH.value, tM.value);
+
   const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
   const qtd = getQtdParaPeca(pecaNome);
-  const inputUnit = tr.querySelector('.horasUnitarias');
-  if (inputUnit) {
-    const hUnit = qtd > 0 ? Number((hTotal / qtd).toFixed(3)) : hTotal;
-    inputUnit.value = hUnit;
-  }
+  const hUnit = qtd > 0 ? Number((hTotal / qtd).toFixed(4)) : hTotal;
+  const hmUnit = decimalParaHorasMinutos(hUnit);
+  uH.value = hmUnit.h;
+  uM.value = hmUnit.m;
   calcularTotais();
 }
 
 function onQuantidadePecasChange() {
   const elFrete = document.getElementById('fretePecas');
   const qtdEl = document.getElementById('quantidadePecas');
+  const qtdGeral = Math.max(1, num(qtdEl?.value) || 1);
   if (elFrete && qtdEl) {
     elFrete.value = qtdEl.value;
   }
 
-  // Atualiza as horas totais de cada operação mantendo a proporção da hora unitária por peça
+  // Atualiza tempo total de cada operação mantendo tempo unitário por peça
   document.querySelectorAll('#maquinas-body tr').forEach(tr => {
-    const inputUnit = tr.querySelector('.horasUnitarias');
-    const inputTotal = tr.querySelector('.horas');
-    if (inputUnit && inputTotal) {
-      const hUnit = num(inputUnit.value);
+    const uH = tr.querySelector('.horasUnitH');
+    const uM = tr.querySelector('.horasUnitM');
+    const tH = tr.querySelector('.horasTotalH');
+    const tM = tr.querySelector('.horasTotalM');
+    if (uH && uM && tH && tM) {
+      const hUnit = horasMinutosParaDecimal(uH.value, uM.value);
+      const hTotalAtual = horasMinutosParaDecimal(tH.value, tM.value);
       const pecaNome = tr.querySelector('.peca-val')?.value || tr.dataset.peca || '';
       const qtd = getQtdParaPeca(pecaNome);
       if (hUnit > 0) {
-        inputTotal.value = Number((hUnit * qtd).toFixed(2));
-      } else if (num(inputTotal.value) > 0 && qtd > 0) {
-        inputUnit.value = Number((num(inputTotal.value) / qtd).toFixed(3));
+        const hmTot = decimalParaHorasMinutos(hUnit * qtd);
+        tH.value = hmTot.h;
+        tM.value = hmTot.m;
+      } else if (hTotalAtual > 0 && qtd > 0) {
+        const hmUnit = decimalParaHorasMinutos(hTotalAtual / qtd);
+        uH.value = hmUnit.h;
+        uM.value = hmUnit.m;
       }
+    }
+  });
+
+  // Atualiza quantidades totais de insumos não marcados como edição manual
+  document.querySelectorAll('#insumos-body tr').forEach(tr => {
+    const inputTotal = tr.querySelector('.qtd');
+    const inputPorPeca = tr.querySelector('.qtdPorPeca');
+    if (inputTotal && inputPorPeca && inputTotal.dataset.manual !== 'true') {
+      inputTotal.value = Number((num(inputPorPeca.value) * qtdGeral).toFixed(3));
     }
   });
 
@@ -154,37 +283,56 @@ function maquinaRowHTML(d) {
     </div>` : '';
 
   const qtdLinha = getQtdParaPeca(d.peca);
-  let horasTotal = (d.horas !== undefined && d.horas !== null && !isNaN(Number(d.horas))) ? Number(d.horas) : 1;
+  let horasTotal = (d.horas !== undefined && d.horas !== null && !isNaN(Number(d.horas)))
+    ? Number(d.horas)
+    : horasMinutosParaDecimal(d.horasInteiras || 1, d.minutos || 0);
   let horasUnit = 0;
   if (d.horasUnitarias !== undefined && d.horasUnitarias !== null && Number(d.horasUnitarias) > 0) {
     horasUnit = Number(d.horasUnitarias);
     if (!d.horas) {
-      horasTotal = Number((horasUnit * qtdLinha).toFixed(2));
+      horasTotal = Number((horasUnit * qtdLinha).toFixed(4));
     }
   } else {
-    horasUnit = qtdLinha > 0 ? Number((horasTotal / qtdLinha).toFixed(3)) : horasTotal;
+    horasUnit = qtdLinha > 0 ? Number((horasTotal / qtdLinha).toFixed(4)) : horasTotal;
   }
+
+  const hmUnit = (d.horasUnitariasInteiras !== undefined && d.minutosUnitarios !== undefined)
+    ? { h: Number(d.horasUnitariasInteiras) || 0, m: Number(d.minutosUnitarios) || 0 }
+    : decimalParaHorasMinutos(horasUnit);
+  const hmTotal = (d.horasInteiras !== undefined && d.minutos !== undefined)
+    ? { h: Number(d.horasInteiras) || 0, m: Number(d.minutos) || 0 }
+    : decimalParaHorasMinutos(horasTotal);
 
   return '<tr class="maquina-row" data-peca="' + escapeAttr(d.peca || '') + '" data-etapa="' + (d.etapa || 1) + '" data-ordem-producao="' + (d.ordemProducao || 1) + '">' +
     '<td>' +
-      pecaBadge +
-      '<input list="lista-maquinas" class="nome" value="' + escapeAttr(d.nome) + '" onchange="onNomeMaquinaChange(this)">' +
-      '<input type="hidden" class="peca-val" value="' + escapeAttr(d.peca || '') + '">' +
-      '<input type="hidden" class="etapa-val" value="' + (d.etapa || 1) + '">' +
-      '<input type="hidden" class="ordem-val" value="' + (d.ordemProducao || 1) + '">' +
+    pecaBadge +
+    '<input list="lista-maquinas" class="nome" value="' + escapeAttr(d.nome) + '" onchange="onNomeMaquinaChange(this)">' +
+    '<input type="hidden" class="peca-val" value="' + escapeAttr(d.peca || '') + '">' +
+    '<input type="hidden" class="etapa-val" value="' + (d.etapa || 1) + '">' +
+    '<input type="hidden" class="ordem-val" value="' + (d.ordemProducao || 1) + '">' +
     '</td>' +
     '<td><textarea class="descricao" rows="2" style="min-height:44px;" placeholder="Passo a passo sequencial da operação...">' + escapeAttr(d.descricao) + '</textarea></td>' +
     '<td><select class="regime" onchange="calcularTotais()">' +
-      '<option value="normal"' + (d.regime === 'normal' ? ' selected' : '') + '>Normal</option>' +
-      '<option value="h50"' + (d.regime === 'h50' ? ' selected' : '') + '>50% Extra</option>' +
-      '<option value="h100"' + (d.regime === 'h100' ? ' selected' : '') + '>100% Noturno</option>' +
+    '<option value="normal"' + (d.regime === 'normal' ? ' selected' : '') + '>Normal</option>' +
+    '<option value="h50"' + (d.regime === 'h50' ? ' selected' : '') + '>50% Extra</option>' +
+    '<option value="h100"' + (d.regime === 'h100' ? ' selected' : '') + '>100% Noturno</option>' +
     '</select></td>' +
-    '<td><input type="number" step="0.001" min="0" class="horasUnitarias num" value="' + horasUnit + '" title="Horas por unidade (tempo por peça)" placeholder="0.000" oninput="onHorasUnitariasChange(this)"></td>' +
-    '<td><input type="number" step="0.01" min="0" class="horas num" value="' + horasTotal + '" title="Horas totais para o lote completo" placeholder="0.0" oninput="onHorasTotaisChange(this)"></td>' +
+    '<td>' +
+    '<div class="hm-input-group">' +
+    '<span class="hm-field"><input type="number" min="0" step="1" class="horasUnitH" value="' + hmUnit.h + '" title="Horas por peça" oninput="onTempoUnitarioChange(this)" onchange="onTempoUnitarioChange(this, true)"><span class="hm-unit">h</span></span>' +
+    '<span class="hm-field"><input type="number" min="0" step="1" class="horasUnitM" value="' + hmUnit.m + '" title="Minutos por peça" oninput="onTempoUnitarioChange(this)" onchange="onTempoUnitarioChange(this, true)"><span class="hm-unit">m</span></span>' +
+    '</div>' +
+    '</td>' +
+    '<td>' +
+    '<div class="hm-input-group">' +
+    '<span class="hm-field"><input type="number" min="0" step="1" class="horasTotalH" value="' + hmTotal.h + '" title="Horas totais do lote" oninput="onTempoTotalChange(this)" onchange="onTempoTotalChange(this, true)"><span class="hm-unit">h</span></span>' +
+    '<span class="hm-field"><input type="number" min="0" step="1" class="horasTotalM" value="' + hmTotal.m + '" title="Minutos totais do lote" oninput="onTempoTotalChange(this)" onchange="onTempoTotalChange(this, true)"><span class="hm-unit">m</span></span>' +
+    '</div>' +
+    '</td>' +
     '<td><input type="number" step="0.01" class="valorHora num" value="' + d.valorHora + '" oninput="calcularTotais()"></td>' +
     '<td class="subtotal num">R$ 0,00</td>' +
     '<td style="text-align:center;"><button type="button" class="rm" onclick="this.closest(\'tr\').remove(); calcularTotais();">✕</button></td>' +
-  '</tr>';
+    '</tr>';
 }
 
 function addInsumoRow() {
@@ -298,16 +446,137 @@ async function confirmarSincronizacaoCatalogo() {
 }
 
 /* ---------------------------------------------------------------
+   MARGENS PERSONALIZADAS POR ORÇAMENTO (ETAPA 2)
+--------------------------------------------------------------- */
+function carregarMargensNoFormulario(orc) {
+  const mp = (orc && orc.margensPersonalizadas && orc.margensPersonalizadas.ativa) ? orc.margensPersonalizadas : null;
+  const setPct = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = (num(val) * 100).toFixed(2);
+  };
+
+  setPct('orcLucroInsumo', mp ? mp.lucroInsumo : (config.lucroInsumo ?? 0.15));
+  setPct('orcLucroMO', mp ? mp.lucroMO : (config.lucroMO ?? 0.30));
+  setPct('orcMargemDesconto', mp ? mp.margemDesconto : (config.margemDesconto ?? 0.03));
+
+  setPct('orcDespFixasInsumo', mp ? mp.despFixasInsumo : (config.despFixasInsumo ?? 0.15));
+  setPct('orcImpostoInsumo', mp ? mp.impostoInsumo : (config.impostoInsumo ?? 0.153));
+  setPct('orcDespFixasMO', mp ? mp.despFixasMO : (config.despFixasMO ?? 0.30));
+  setPct('orcImpostoMO', mp ? mp.impostoMO : (config.impostoMO ?? 0.153));
+  setPct('orcJurosMensal', mp ? mp.jurosMensal : (config.jurosMensal ?? 0.015));
+
+  obterMargensAtivasOrcamento();
+}
+
+function obterMargensAtivasOrcamento() {
+  const getDec = (id, fallback) => {
+    const el = document.getElementById(id);
+    if (!el || el.value === '') return num(fallback);
+    return num(el.value) / 100;
+  };
+
+  const despFixasInsumo = getDec('orcDespFixasInsumo', config.despFixasInsumo ?? 0.15);
+  const impostoInsumo = getDec('orcImpostoInsumo', config.impostoInsumo ?? 0.153);
+  const lucroInsumo = getDec('orcLucroInsumo', config.lucroInsumo ?? 0.15);
+
+  const despFixasMO = getDec('orcDespFixasMO', config.despFixasMO ?? 0.30);
+  const impostoMO = getDec('orcImpostoMO', config.impostoMO ?? 0.153);
+  const lucroMO = getDec('orcLucroMO', config.lucroMO ?? 0.30);
+
+  const margemDesconto = getDec('orcMargemDesconto', config.margemDesconto ?? 0.03);
+  const jurosMensal = getDec('orcJurosMensal', config.jurosMensal ?? 0.015);
+
+  const diff = (a, b) => Math.abs(num(a) - num(b)) > 0.0002;
+  const ativa =
+    diff(despFixasInsumo, config.despFixasInsumo ?? 0.15) ||
+    diff(impostoInsumo, config.impostoInsumo ?? 0.153) ||
+    diff(lucroInsumo, config.lucroInsumo ?? 0.15) ||
+    diff(despFixasMO, config.despFixasMO ?? 0.30) ||
+    diff(impostoMO, config.impostoMO ?? 0.153) ||
+    diff(lucroMO, config.lucroMO ?? 0.30) ||
+    diff(margemDesconto, config.margemDesconto ?? 0.03) ||
+    diff(jurosMensal, config.jurosMensal ?? 0.015);
+
+  const badge = document.getElementById('badgeMargemOrcamento');
+  if (badge) {
+    if (ativa) {
+      badge.textContent = '✏️ Personalizada';
+      badge.style.background = '#FEF3C7';
+      badge.style.color = '#92400E';
+      badge.style.borderColor = '#FCD34D';
+    } else {
+      badge.textContent = 'Padrão global';
+      badge.style.background = '#EFF6FF';
+      badge.style.color = '#1E40AF';
+      badge.style.borderColor = '#BFDBFE';
+    }
+  }
+
+  const mcIns = despFixasInsumo + impostoInsumo + lucroInsumo;
+  const mcMo = despFixasMO + impostoMO + lucroMO;
+  const alerta = document.getElementById('alertaMargemInvalida');
+  if (alerta) {
+    alerta.style.display = (mcIns >= 0.95 || mcMo >= 0.95) ? 'block' : 'none';
+  }
+
+  return {
+    ativa,
+    despFixasInsumo: Number(despFixasInsumo.toFixed(4)),
+    impostoInsumo: Number(impostoInsumo.toFixed(4)),
+    lucroInsumo: Number(lucroInsumo.toFixed(4)),
+    despFixasMO: Number(despFixasMO.toFixed(4)),
+    impostoMO: Number(impostoMO.toFixed(4)),
+    lucroMO: Number(lucroMO.toFixed(4)),
+    margemDesconto: Number(margemDesconto.toFixed(4)),
+    jurosMensal: Number(jurosMensal.toFixed(4))
+  };
+}
+
+function onMargemOrcamentoChange() {
+  calcularTotais();
+}
+
+function restaurarMargensPadraoOrcamento() {
+  carregarMargensNoFormulario({ margensPersonalizadas: null });
+  calcularTotais();
+  avisar('Margens restauradas para o padrão global de Configurações.');
+}
+
+/* ---------------------------------------------------------------
    CÁLCULOS (FÓRMULAS OFICIAIS NARDELLI)
 --------------------------------------------------------------- */
 function calcularTotais() {
+  const qtdPecas = Math.max(num(document.getElementById('quantidadePecas')?.value) || 1, 1);
+  const unidadePeca = (document.getElementById('unidadePeca')?.value || 'PÇ').toUpperCase();
+
   let totalInsumos = 0;
   document.querySelectorAll('#insumos-body tr').forEach(tr => {
-    const qtd = num(tr.querySelector('.qtd')?.value);
+    const inputTotal = tr.querySelector('.qtd');
+    const inputPorPeca = tr.querySelector('.qtdPorPeca');
     const preco = num(tr.querySelector('.preco')?.value);
-    const sub = qtd * preco;
+    const qtdPorPeca = num(inputPorPeca?.value);
+    const qtdTotal = num(inputTotal?.value);
+    const sub = qtdTotal * preco;
+
     const tdSub = tr.querySelector('.subtotal');
     if (tdSub) tdSub.textContent = fmt(sub);
+
+    const elCustoPeca = tr.querySelector('.ins-custo-peca');
+    if (elCustoPeca) {
+      elCustoPeca.textContent = `${fmt(qtdPorPeca * preco)} / pç`;
+    }
+
+    const elHint = tr.querySelector('.ins-qtd-hint');
+    if (elHint && inputTotal) {
+      const sugerido = Number((qtdPorPeca * qtdPecas).toFixed(3));
+      const isManual = inputTotal.dataset.manual === 'true';
+      if (isManual && Math.abs(sugerido - qtdTotal) > 0.005) {
+        elHint.innerHTML = `<span style="color:#B45309;">Calc: ${sugerido} (manual)</span> <button type="button" class="btn-sync-ins" title="Aplicar quantidade calculada (${sugerido})" onclick="sincronizarQtdTotalInsumo(this)">↺</button>`;
+      } else {
+        elHint.textContent = `${qtdPecas} × ${qtdPorPeca} = ${sugerido}`;
+      }
+    }
+
     totalInsumos += sub;
   });
 
@@ -315,7 +584,11 @@ function calcularTotais() {
   document.querySelectorAll('#maquinas-body tr').forEach(tr => {
     const regime = tr.querySelector('.regime')?.value || 'normal';
     const valorHora = num(tr.querySelector('.valorHora')?.value);
-    const horas = num(tr.querySelector('.horas')?.value);
+    const tH = tr.querySelector('.horasTotalH');
+    const tM = tr.querySelector('.horasTotalM');
+    const horas = (tH && tM)
+      ? horasMinutosParaDecimal(tH.value, tM.value)
+      : num(tr.querySelector('.horas')?.value);
     const rate = regime === 'h50' ? valorHora * 1.5 : (regime === 'h100' ? valorHora * 2 : valorHora);
     const sub = horas * rate;
     const tdSub = tr.querySelector('.subtotal');
@@ -326,13 +599,14 @@ function calcularTotais() {
   const moEscritorio = num(document.getElementById('moEscritorio')?.value);
   const totalMO = totalMaquina + moEscritorio;
 
-  const mcInsumo = num(config.despFixasInsumo || 0.15) + num(config.impostoInsumo || 0.1501) + num(config.lucroInsumo || 0.15);
-  const taxaInsumo = 1 - mcInsumo;
-  const valorInsumoComMargem = taxaInsumo > 0 ? (totalInsumos / taxaInsumo) : totalInsumos;
+  const margensAtivas = obterMargensAtivasOrcamento();
+  const mcInsumo = margensAtivas.despFixasInsumo + margensAtivas.impostoInsumo + margensAtivas.lucroInsumo;
+  const taxaInsumo = Math.max(0.05, 1 - mcInsumo);
+  const valorInsumoComMargem = totalInsumos / taxaInsumo;
 
-  const mcMO = num(config.despFixasMO || 0.30) + num(config.impostoMO || 0.1501) + num(config.lucroMO || 0.30);
-  const taxaMO = 1 - mcMO;
-  const valorMOComMargem = taxaMO > 0 ? (totalMO / taxaMO) : totalMO;
+  const mcMO = margensAtivas.despFixasMO + margensAtivas.impostoMO + margensAtivas.lucroMO;
+  const taxaMO = Math.max(0.05, 1 - mcMO);
+  const valorMOComMargem = totalMO / taxaMO;
 
   const freteAtivo = isFreteAtivo();
   const distKm = num(document.getElementById('freteDistKm')?.value);
@@ -342,14 +616,10 @@ function calcularTotais() {
   const freteTotal = freteAtivo ? ((distKm * custoKm * 2 * viagens) / pecas) : 0;
 
   const semDesconto = valorInsumoComMargem + valorMOComMargem + freteTotal;
-  const comDesconto = semDesconto * (1 + num(config.margemDesconto || 0.03));
+  const comDesconto = semDesconto * (1 + margensAtivas.margemDesconto);
   const prazoMeses = num(document.getElementById('prazoMeses')?.value);
-  const taxaJuros = prazoMeses * num(config.jurosMensal || 0.015);
+  const taxaJuros = prazoMeses * margensAtivas.jurosMensal;
   const precoAPrazo = comDesconto * (1 + taxaJuros);
-
-  // Parâmetros de quantidade e unidade da peça
-  const qtdPecas = Math.max(num(document.getElementById('quantidadePecas')?.value) || 1, 1);
-  const unidadePeca = (document.getElementById('unidadePeca')?.value || 'PÇ').toUpperCase();
 
   const totalFinal = prazoMeses > 0 ? precoAPrazo : comDesconto;
   const valorUnitarioPeca = totalFinal / qtdPecas;
@@ -377,7 +647,7 @@ function calcularTotais() {
     setTxt('distKmBadgeColeta', '0 km');
   }
   setTxt('semDesconto', fmt(semDesconto));
-  setTxt('labelDesconto', 'Com margem de desconto (' + ((config.margemDesconto || 0.03) * 100).toFixed(1) + '%)');
+  setTxt('labelDesconto', 'Com margem de desconto (' + (margensAtivas.margemDesconto * 100).toFixed(1) + '%)');
   setTxt('comDesconto', fmt(comDesconto));
 
   // Rateio e Valores Unitários de Insumos e Mão de Obra
@@ -510,7 +780,7 @@ async function consultarCEP(cepRaw) {
         parts.push(data.uf ? `${data.cidade} - ${data.uf}` : data.cidade);
       }
       const endFormatado = parts.join(', ');
-      
+
       const elEnd = document.getElementById('clienteEndereco');
       if (elEnd && (!elEnd.value.trim() || !elEnd.value.includes(data.cidade))) {
         elEnd.value = endFormatado;
@@ -519,7 +789,7 @@ async function consultarCEP(cepRaw) {
       if (data.distanciaKm !== undefined && data.distanciaKm !== null) {
         const elDist = document.getElementById('freteDistKm');
         if (elDist) elDist.value = data.distanciaKm;
-        
+
         const aviso = document.getElementById('freteAvisoDestino');
         if (aviso) {
           aviso.textContent = `📍 Rota estimada: Nardelli (Aracaju) ➔ ${data.cidade}/${data.uf} (${data.distanciaKm} km)`;
@@ -773,7 +1043,7 @@ function renderizarRoteiroProducaoMultiPecas(dados) {
         <div style="display:inline-flex; align-items:center; gap:5px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:5px; padding:4px 8px; font-size:11px;">
           <span style="font-weight:700; color:var(--azul); background:#EFF6FF; padding:1px 5px; border-radius:3px; border:1px solid #BFDBFE;">${etapaNum}ª</span>
           <span style="font-weight:600; color:#1E293B;" title="${escapeAttr(op.descricao || '')}">${escapeHTML(maquinaCurta)}</span>
-          <span style="color:#64748B; font-size:10px;">(${horasNum}h)</span>
+          <span style="color:#64748B; font-size:10px;">(${formatarHorasMinutosTexto(horasNum)})</span>
         </div>
       `;
 
@@ -806,8 +1076,12 @@ function novoOrcamentoObjPadrao() {
     tratamentoTermico: 'Nenhum',
     durezaDesejada: '',
     detalhesTermico: '',
-    itensInsumo: [{ nome: '', qtd: 1, unidade: 'UN', preco: 0 }],
-    itensMaquina: [{ nome: '', descricao: '', regime: 'normal', horas: 1, valorHora: 0 }],
+    possuiModelagem3D: false,
+    incluirModelagem3D: false,
+    detalhesModelagem3D: '',
+    margensPersonalizadas: null,
+    itensInsumo: [{ nome: '', qtd: 1, qtdPorPeca: 1, qtdTotalManual: false, unidade: 'UN', preco: 0 }],
+    itensMaquina: [{ nome: '', descricao: '', regime: 'normal', horas: 1, horasInteiras: 1, minutos: 0, valorHora: 0 }],
     moEscritorio: 0,
     frete: { ativo: false, opcao: 'sem_frete', distKm: 0, viagens: 1, pecas: 1 },
     parcelamento: { prazoMeses: 0 },
@@ -829,12 +1103,11 @@ function carregarOrcamentoNoFormulario(d) {
   sincronizarSelectClienteComFormulario((d.cliente && d.cliente.nome) || '');
   document.getElementById('descricaoServico').value = d.descricaoServico || '';
 
-  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v !== undefined && v !== null ? v : ''; };
   setVal('categoriaPeca', d.categoriaPeca || d.itemType || 'Usinagem Geral');
   setVal('quantidadePecas', d.quantidadePecas || d.quantidade || 1);
   setVal('unidadePeca', (d.unidadePeca || d.unidade || 'PÇ').toUpperCase());
   setVal('prazoDesejado', d.prazoDesejado || d.prazo || '');
-  
+
   const matVal = d.materialPeca || d.material || '';
   const selMat = document.getElementById('materialPeca');
   if (selMat) {
@@ -867,13 +1140,21 @@ function carregarOrcamentoNoFormulario(d) {
   setVal('durezaDesejada', d.durezaDesejada || d.dureza || '');
   setVal('detalhesTermico', d.detalhesTermico || '');
 
-  const itensInsumo = (d.itensInsumo && d.itensInsumo.length) ? d.itensInsumo : [{ nome: '', qtd: 1, unidade: '', preco: 0 }];
+  const possui3dStr = d.possuiModelagem3D ? 'sim' : 'nao';
+  setVal('possuiModelagem3D', possui3dStr);
+  aoAlterarPossuiModelagem3D(possui3dStr);
+  const chkInc3d = document.getElementById('incluirModelagem3D');
+  if (chkInc3d) chkInc3d.checked = Boolean(!d.possuiModelagem3D && d.incluirModelagem3D);
+  setVal('detalhesModelagem3D', d.detalhesModelagem3D || '');
+
+  const itensInsumo = (d.itensInsumo && d.itensInsumo.length) ? d.itensInsumo : [{ nome: '', qtd: 1, qtdPorPeca: 1, unidade: '', preco: 0 }];
   const itensMaquina = (d.itensMaquina && d.itensMaquina.length) ? d.itensMaquina : [{ nome: '', descricao: '', regime: 'normal', horas: 1, valorHora: 0 }];
 
   document.getElementById('insumos-body').innerHTML = itensInsumo.map(insumoRowHTML).join('');
   document.getElementById('maquinas-body').innerHTML = itensMaquina.map(maquinaRowHTML).join('');
 
   document.getElementById('moEscritorio').value = d.moEscritorio !== undefined ? d.moEscritorio : 0;
+  carregarMargensNoFormulario(d);
 
   const freteAtivo = !!((d.frete && (d.frete.ativo === true || d.frete.opcao === 'com_frete')) || (d.frete && d.frete.distKm > 0 && d.frete.ativo !== false));
   atualizarVisibilidadePaineisFrete(freteAtivo);
@@ -968,6 +1249,7 @@ function carregarOrcamentoNoFormulario(d) {
 
   // Banner de Aprendizado Ativo (JEV) se tiver usado referência histórica
   renderizarBannerReferenciaHistorica(d.referenciaHistorica);
+  renderizarBoxLicaoAprendida(d);
 
   // Painel de Roteiro Sequencial de Produção para Múltiplas Peças
   renderizarRoteiroProducaoMultiPecas(d);
@@ -1015,7 +1297,7 @@ function carregarOrcamentoNoFormulario(d) {
 
   // Se o orçamento já tem insumos/operações preenchidos ou foi concluído/enviado, vai para a etapa de revisão
   const temItensPreenchidos = (d.itensInsumo && d.itensInsumo.some(i => i.nome && i.nome.trim() !== '')) ||
-                              (d.itensMaquina && d.itensMaquina.some(m => m.nome && m.nome.trim() !== ''));
+    (d.itensMaquina && d.itensMaquina.some(m => m.nome && m.nome.trim() !== ''));
   if (temItensPreenchidos || d.status === 'CONCLUIDO' || d.status === 'APROVADO' || d.status === 'ENVIADO_AO_CLIENTE' || d.status === 'AJUSTE_SOLICITADO' || d.status === 'RECUSADO') {
     mudarEtapaOrcamento('revisao');
   } else {
@@ -1098,27 +1380,54 @@ function coletarOrcamentoAtualDoDOM(statusForcado) {
     tratamentoTermico: document.getElementById('tratamentoTermico')?.value || 'Nenhum',
     durezaDesejada: document.getElementById('durezaDesejada')?.value.trim() || '',
     detalhesTermico: document.getElementById('detalhesTermico')?.value.trim() || '',
+    possuiModelagem3D: (document.getElementById('possuiModelagem3D')?.value || 'nao') === 'sim',
+    incluirModelagem3D: ((document.getElementById('possuiModelagem3D')?.value || 'nao') !== 'sim') && Boolean(document.getElementById('incluirModelagem3D')?.checked),
+    detalhesModelagem3D: document.getElementById('detalhesModelagem3D')?.value.trim() || '',
     observacoes: document.getElementById('obsIA').value.trim() || orcOriginal.observacoes || '',
-    itensInsumo: Array.from(document.querySelectorAll('#insumos-body tr')).map(tr => ({
-      nome: tr.querySelector('.nome')?.value.trim() || '',
-      qtd: num(tr.querySelector('.qtd')?.value) || 1,
-      unidade: (tr.querySelector('.unidade')?.value.trim() || 'UN').toUpperCase(),
-      preco: num(tr.querySelector('.preco')?.value) || 0,
-    })).filter(i => i.nome !== ''),
-    itensMaquina: Array.from(document.querySelectorAll('#maquinas-body tr')).map(tr => ({
-      peca: tr.querySelector('.peca-val')?.value || tr.dataset.peca || '',
-      etapa: parseInt(tr.querySelector('.etapa-val')?.value || tr.dataset.etapa || '1', 10),
-      ordemProducao: parseInt(tr.querySelector('.ordem-val')?.value || tr.dataset.ordemProducao || '1', 10),
-      nome: tr.querySelector('.nome')?.value.trim() || '',
-      descricao: tr.querySelector('.descricao')?.value.trim() || '',
-      regime: tr.querySelector('.regime')?.value || 'normal',
-      horasUnitarias: num(tr.querySelector('.horasUnitarias')?.value) || 0,
-      horas: num(tr.querySelector('.horas')?.value) || 1,
-      valorHora: num(tr.querySelector('.valorHora')?.value) || 0,
-    })).filter(m => m.nome !== ''),
+    itensInsumo: Array.from(document.querySelectorAll('#insumos-body tr')).map(tr => {
+      const inputQtd = tr.querySelector('.qtd');
+      const qtdPorPeca = num(tr.querySelector('.qtdPorPeca')?.value);
+      const qtdTotal = num(inputQtd?.value);
+      return {
+        nome: tr.querySelector('.nome')?.value.trim() || '',
+        qtdPorPeca: qtdPorPeca || (qtdPecas > 0 ? Number((qtdTotal / qtdPecas).toFixed(4)) : 1),
+        qtd: qtdTotal || 1,
+        qtdTotalManual: inputQtd?.dataset?.manual === 'true',
+        unidade: (tr.querySelector('.unidade')?.value.trim() || 'UN').toUpperCase(),
+        preco: num(tr.querySelector('.preco')?.value) || 0,
+      };
+    }).filter(i => i.nome !== ''),
+    itensMaquina: Array.from(document.querySelectorAll('#maquinas-body tr')).map(tr => {
+      const uH = Math.max(0, Math.floor(num(tr.querySelector('.horasUnitH')?.value)));
+      const uM = Math.max(0, Math.round(num(tr.querySelector('.horasUnitM')?.value)));
+      const tH = Math.max(0, Math.floor(num(tr.querySelector('.horasTotalH')?.value)));
+      const tM = Math.max(0, Math.round(num(tr.querySelector('.horasTotalM')?.value)));
+      const horasUnit = horasMinutosParaDecimal(uH, uM);
+      const horasTot = (tr.querySelector('.horasTotalH') && tr.querySelector('.horasTotalM'))
+        ? horasMinutosParaDecimal(tH, tM)
+        : (num(tr.querySelector('.horas')?.value) || 1);
+      const hmTotNorm = decimalParaHorasMinutos(horasTot);
+      const hmUnitNorm = decimalParaHorasMinutos(horasUnit);
+      return {
+        peca: tr.querySelector('.peca-val')?.value || tr.dataset.peca || '',
+        etapa: parseInt(tr.querySelector('.etapa-val')?.value || tr.dataset.etapa || '1', 10),
+        ordemProducao: parseInt(tr.querySelector('.ordem-val')?.value || tr.dataset.ordemProducao || '1', 10),
+        nome: tr.querySelector('.nome')?.value.trim() || '',
+        descricao: tr.querySelector('.descricao')?.value.trim() || '',
+        regime: tr.querySelector('.regime')?.value || 'normal',
+        horasUnitarias: horasUnit,
+        horasUnitariasInteiras: hmUnitNorm.h,
+        minutosUnitarios: hmUnitNorm.m,
+        horas: horasTot,
+        horasInteiras: hmTotNorm.h,
+        minutos: hmTotNorm.m,
+        valorHora: num(tr.querySelector('.valorHora')?.value) || 0,
+      };
+    }).filter(m => m.nome !== ''),
     ehConjuntoMultiPecas: !!orcOriginal.ehConjuntoMultiPecas,
     pecas: orcOriginal.pecas || [],
     moEscritorio: num(document.getElementById('moEscritorio').value) || 0,
+    margensPersonalizadas: obterMargensAtivasOrcamento(),
     frete: {
       ativo: isFreteAtivo(),
       opcao: isFreteAtivo() ? 'com_frete' : 'sem_frete',
@@ -1131,6 +1440,7 @@ function coletarOrcamentoAtualDoDOM(statusForcado) {
     analiseIA: orcOriginal.analiseIA || null,
     versaoOriginalIA: orcOriginal.versaoOriginalIA || null,
     referenciaHistorica: orcOriginal.referenciaHistorica || null,
+    resumoAprendizadoIA: orcOriginal.resumoAprendizadoIA || null,
     revisadoPorHumano: true,
     videoInfo: orcOriginal.videoInfo || null,
     historicoEventos: orcOriginal.historicoEventos || [],
@@ -1373,6 +1683,65 @@ function copiarMensagemEnvio() {
   });
 }
 
+async function dispararEnvioViaMetaAPI() {
+  if (!currentOrcId) {
+    mostrarErro('Salve o orçamento antes de enviar pela API Oficial da Meta.');
+    return;
+  }
+
+  const msg = document.getElementById('modalEnvioMensagemTexto')?.value.trim() || '';
+  const fone = document.getElementById('clienteTel')?.value.trim() || '';
+  if (!fone) {
+    mostrarErro('Informe o Telefone / WhatsApp do cliente antes de enviar pela API Oficial.');
+    return;
+  }
+
+  const btn = document.getElementById('btnEnviarViaMetaAPI');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Enviando...';
+  }
+
+  try {
+    const res = await fetch(`/api/orcamentos/${currentOrcId}/enviar-cliente`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        canal: 'whatsapp',
+        telefone: fone,
+        mensagem: msg,
+        enviarViaMeta: true,
+        usuario: usuarioLogado?.nome || 'Orçamentista'
+      })
+    });
+    const data = await res.json();
+    if (!data.sucesso) throw new Error(data.erro || 'Falha ao registrar envio');
+
+    const meta = data.envioMeta;
+    if (meta?.janelaExpirada) {
+      avisar('⚠️ Janela de 24h expirada na Meta! Proposta salva como enviada — use o WhatsApp Web para envio gratuito.', 9000);
+    } else if (meta?.sucesso && meta?.simulado) {
+      avisar(`ℹ️ Proposta #${data.orcamento.numero} marcada como enviada (Meta API em modo simulação — configure Token e Phone ID em Configurações).`, 8000);
+    } else if (meta?.sucesso) {
+      avisar(`✅ Proposta #${data.orcamento.numero} enviada diretamente via WhatsApp API Oficial da Meta!`);
+    } else if (meta?.erro) {
+      avisar(`⚠️ Proposta salva, mas houve erro na Meta API: ${meta.erro}`, 8000);
+    }
+
+    fecharModalEnviarProposta();
+    carregarOrcamentoNoFormulario(data.orcamento);
+    await carregarSalvos();
+    await carregarConversas();
+  } catch (e) {
+    mostrarErro('Erro ao enviar via Meta API: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📨 Enviar via API Meta';
+    }
+  }
+}
+
 async function confirmarEnvioProposta() {
   if (!currentOrcId) {
     mostrarErro('Salve o orçamento antes de confirmar o envio.');
@@ -1523,7 +1892,7 @@ async function abrirModalHistoricoCliente(orcId = null) {
       const res = await fetch(`/api/orcamentos/${historicoOrcIdAtivo}`);
       const data = await res.json();
       if (data.sucesso) orc = data.orcamento;
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const container = document.getElementById('historicoTimelineLista');
@@ -1688,7 +2057,7 @@ function renderArquivosPendentes() {
 
   box.innerHTML = arquivosPendentes.map((a, idx) => {
     const isImagem = (a.mediaType && a.mediaType.startsWith('image/')) ||
-                     /\.(jpe?g|png|webp|gif|bmp)$/i.test(a.nome || '');
+      /\.(jpe?g|png|webp|gif|bmp)$/i.test(a.nome || '');
     const isPdf = (a.mediaType === 'application/pdf') || /\.pdf$/i.test(a.nome || '');
     const isCad = /\.(dwg|dxf)$/i.test(a.nome || '');
 
@@ -1718,8 +2087,8 @@ function renderArquivosPendentes() {
     }
 
     const badgeTipo = isImagem ? '<span style="color:#059669; font-weight:700;">IMG</span>' :
-                      isPdf ? '<span style="color:#DC2626; font-weight:700;">PDF</span>' :
-                      isCad ? '<span style="color:#2563EB; font-weight:700;">CAD</span>' : 'ARQ';
+      isPdf ? '<span style="color:#DC2626; font-weight:700;">PDF</span>' :
+        isCad ? '<span style="color:#2563EB; font-weight:700;">CAD</span>' : 'ARQ';
 
     const tamTxt = a.tamanhoFormatado ? ` • ${a.tamanhoFormatado}` : '';
 
@@ -1992,6 +2361,9 @@ async function rodarAnaliseIA() {
   const tratamentoTermico = document.getElementById('tratamentoTermico')?.value || 'Nenhum';
   const durezaDesejada = document.getElementById('durezaDesejada')?.value.trim() || '';
   const detalhesTermico = document.getElementById('detalhesTermico')?.value.trim() || '';
+  const possuiModelagem3D = (document.getElementById('possuiModelagem3D')?.value || 'nao') === 'sim';
+  const incluirModelagem3D = !possuiModelagem3D && Boolean(document.getElementById('incluirModelagem3D')?.checked);
+  const detalhesModelagem3D = document.getElementById('detalhesModelagem3D')?.value.trim() || '';
 
   if (!descricao && arquivosPendentes.length === 0) {
     mostrarErro('Por favor, informe a descrição do serviço ou anexe pelo menos uma foto/desenho.');
@@ -2026,6 +2398,9 @@ async function rodarAnaliseIA() {
         tratamentoTermico,
         durezaDesejada,
         detalhesTermico,
+        possuiModelagem3D,
+        incluirModelagem3D,
+        detalhesModelagem3D,
         arquivos: arquivosPendentes
       })
     });
@@ -2035,22 +2410,17 @@ async function rodarAnaliseIA() {
       throw new Error(data.erro || 'Falha na resposta da IA');
     }
 
-    const { resultado, triagemJev, modelo, referenciaHistorica } = data;
+    const { resultado, triagemJev, modelo, referenciaHistorica, licoesAplicadasCount } = data;
 
     if (!orcOriginal) orcOriginal = {};
+    orcOriginal.possuiModelagem3D = possuiModelagem3D;
+    orcOriginal.incluirModelagem3D = incluirModelagem3D;
+    orcOriginal.detalhesModelagem3D = detalhesModelagem3D;
     orcOriginal.analiseIA = {
       complexidade: triagemJev?.complexidade || 'MÉDIA',
       modelo: modelo || 'Anthropic: Claude Sonnet 5.5'
     };
 
-    // Snapshot da versão original gerada pela IA para rastrear melhorias manuais
-    orcOriginal.versaoOriginalIA = {
-      itensInsumo: JSON.parse(JSON.stringify(resultado.insumos || [])),
-      itensMaquina: JSON.parse(JSON.stringify(resultado.operacoes || [])),
-      moEscritorio: resultado.moEscritorio !== undefined ? resultado.moEscritorio : 0,
-      totais: JSON.parse(JSON.stringify(calcularTotais())),
-      geradoEm: new Date().toISOString()
-    };
     if (referenciaHistorica) {
       orcOriginal.referenciaHistorica = referenciaHistorica;
     }
@@ -2062,9 +2432,9 @@ async function rodarAnaliseIA() {
       orcOriginal.justificativaMaterial = resultado.justificativaMaterial || '';
       const selMat = document.getElementById('materialPeca');
       if (selMat && !material) {
-        let optExistente = Array.from(selMat.options).find(o => 
-          o.value && (o.value.toLowerCase().includes(resultado.materialDefinido.toLowerCase()) || 
-                      resultado.materialDefinido.toLowerCase().includes(o.value.toLowerCase()))
+        let optExistente = Array.from(selMat.options).find(o =>
+          o.value && (o.value.toLowerCase().includes(resultado.materialDefinido.toLowerCase()) ||
+            resultado.materialDefinido.toLowerCase().includes(o.value.toLowerCase()))
         );
         if (optExistente) {
           selMat.value = optExistente.value;
@@ -2091,6 +2461,10 @@ async function rodarAnaliseIA() {
       if (tr.querySelector('.nome')?.value.trim() === '') tr.remove();
     });
 
+    // Limpa linhas anteriores ao reanalisar para evitar duplicação na Etapa 2
+    document.getElementById('insumos-body').innerHTML = '';
+    document.getElementById('maquinas-body').innerHTML = '';
+
     // Insere sugestões nas tabelas
     (resultado.insumos || []).forEach(d => {
       document.getElementById('insumos-body').insertAdjacentHTML('beforeend', insumoRowHTML(d));
@@ -2100,14 +2474,24 @@ async function rodarAnaliseIA() {
     });
 
     document.getElementById('moEscritorio').value = resultado.moEscritorio !== undefined ? resultado.moEscritorio : 0;
-    
+
     // Sincroniza quantidade de peças no frete
     const elFretePecas = document.getElementById('fretePecas');
     if (elFretePecas) {
       elFretePecas.value = quantidade || 1;
     }
 
-    calcularTotais();
+    const totaisCalculadosV1 = calcularTotais();
+
+    // Snapshot da versão original gerada pela IA (já com os totais da V1 calculados!)
+    orcOriginal.versaoOriginalIA = {
+      itensInsumo: JSON.parse(JSON.stringify(resultado.insumos || [])),
+      itensMaquina: JSON.parse(JSON.stringify(resultado.operacoes || [])),
+      moEscritorio: resultado.moEscritorio !== undefined ? resultado.moEscritorio : 0,
+      incluirModelagem3D,
+      totais: JSON.parse(JSON.stringify(totaisCalculadosV1 || {})),
+      geradoEm: new Date().toISOString()
+    };
 
     // Banner de Auditoria de IA
     const auditBox = document.getElementById('iaAuditBox');
@@ -2116,11 +2500,12 @@ async function rodarAnaliseIA() {
       const elComp = document.getElementById('iaAuditComplexidade');
       const elMod = document.getElementById('iaAuditModelo');
       if (elComp) elComp.textContent = `${triagemJev?.complexidade || 'MÉDIA'} COMPLEXIDADE`;
-      if (elMod) elMod.textContent = modelo || 'Claude 3.5 Sonnet';
+      if (elMod) elMod.textContent = (modelo || 'Claude 3.5 Sonnet') + (licoesAplicadasCount > 0 ? ` · 🧠 ${licoesAplicadasCount} lição(ões) aplicadas` : '');
     }
 
     // Banner de Aprendizado Ativo (JEV)
     renderizarBannerReferenciaHistorica(referenciaHistorica);
+    renderizarBoxLicaoAprendida(orcOriginal);
 
     // Salva metadados de múltiplas peças e renderiza o Roteiro de Produção
     if (resultado.ehConjuntoMultiPecas !== undefined) {
@@ -2144,6 +2529,104 @@ async function rodarAnaliseIA() {
     mostrarErro('Não consegui me conectar à IA agora: ' + err.message);
   } finally {
     desbloquearTelaIA();
+  }
+}
+
+/* ===============================================================
+   APRENDIZADO CONTÍNUO NA UI (RESUMO V1 vs APROVADO)
+=============================================================== */
+function renderizarBoxLicaoAprendida(orc) {
+  const box = document.getElementById('iaLicaoAprendidaBox');
+  if (!box) return;
+
+  const licao = orc && orc.resumoAprendizadoIA;
+  const aprovadoComV1 = orc && ['APROVADO', 'CONCLUIDO'].includes(orc.status) && orc.versaoOriginalIA;
+
+  if (!licao && !aprovadoComV1) {
+    box.style.display = 'none';
+    return;
+  }
+
+  box.style.display = 'block';
+  const elCat = document.getElementById('iaLicaoCategoria');
+  const elMod = document.getElementById('iaLicaoModelo');
+  const elRes = document.getElementById('iaLicaoResumo');
+  const elRegras = document.getElementById('iaLicaoRegras');
+  const btnRe = document.getElementById('btnReanalisarLicao');
+
+  if (licao && licao.resumoExecutivo) {
+    if (elCat) elCat.textContent = licao.categoriaAprendizado || 'GERAL';
+    if (elMod) elMod.textContent = licao.modeloUsado ? `Analisado por: ${licao.modeloUsado}` : '';
+    if (elRes) elRes.textContent = licao.resumoExecutivo;
+    if (elRegras) {
+      const regras = Array.isArray(licao.regrasParaFuturo) ? licao.regrasParaFuturo : [];
+      elRegras.innerHTML = regras.map(r => `<li>${escapeHTML(r)}</li>`).join('');
+    }
+  } else {
+    if (elCat) elCat.textContent = 'PENDENTE';
+    if (elMod) elMod.textContent = '';
+    if (elRes) elRes.textContent = 'Orçamento aprovado com 1ª versão da IA registrada. Clique em "Atualizar Resumo" para gerar a síntese com o modelo econômico.';
+    if (elRegras) elRegras.innerHTML = '';
+  }
+
+  if (btnRe) {
+    btnRe.style.display = (orc && orc.id && orc.versaoOriginalIA) ? 'inline-flex' : 'none';
+  }
+}
+
+async function reanalisarAprendizadoOrcamento() {
+  if (!currentOrcId) return;
+  const btn = document.getElementById('btnReanalisarLicao');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Analisando...';
+  }
+
+  try {
+    const res = await fetch(`/api/ia/analisar-aprendizado/${currentOrcId}`, { method: 'POST' });
+    const data = await res.json();
+    if (!data.sucesso) throw new Error(data.erro || 'Falha ao gerar resumo');
+    if (orcOriginal) orcOriginal.resumoAprendizadoIA = data.licao;
+    renderizarBoxLicaoAprendida(orcOriginal);
+    await carregarLicoesAprendidasConfig();
+    avisar('🧠 Resumo de aprendizado gerado pelo modelo econômico!');
+  } catch (e) {
+    mostrarErro('Erro ao analisar aprendizado: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Atualizar Resumo';
+    }
+  }
+}
+
+async function carregarLicoesAprendidasConfig() {
+  const box = document.getElementById('painelLicoesAprendidasConfig');
+  if (!box) return;
+  try {
+    const res = await fetch('/api/ia/licoes-aprendidas');
+    const data = await res.json();
+    if (!data.sucesso) return;
+    if (!data.ativo) {
+      box.innerHTML = '<span style="color:#B45309;">Modelo de aprendizagem desativado no <code>.env</code> (<code>USAR_MODELO_APRENDIZAGEM=false</code>).</span>';
+      return;
+    }
+    const licoes = data.licoes || [];
+    if (licoes.length === 0) {
+      box.innerHTML = '<span style="color:var(--texto-suave);">Nenhuma lição aprendida registrada ainda. Aprove um orçamento gerado com IA para o modelo econômico analisar as diferenças e gravar orientações futuras.</span>';
+      return;
+    }
+    box.innerHTML = licoes.slice(0, 6).map(l => `
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:4px; padding:8px 10px; margin-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; gap:8px; font-size:11px; margin-bottom:2px;">
+          <b style="color:#92400E;">Orç. #${escapeHTML(l.numero || '---')} · ${escapeHTML(l.categoriaAprendizado || 'GERAL')}</b>
+          <span style="color:#78350F;">${escapeHTML(l.modeloUsado || '')}</span>
+        </div>
+        <div style="color:#451A03; font-size:12px;">${escapeHTML(l.resumoExecutivo || '')}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    box.textContent = 'Não foi possível carregar lições aprendidas.';
   }
 }
 
@@ -2254,7 +2737,7 @@ async function carregarConversas() {
       renderizarListaConversas();
 
       // Atualiza badge de pendentes na navegação
-      const pendentes = conversas.filter(c => c.status === 'pendente').length;
+      const pendentes = conversas.filter(c => c.status === 'pendente' || c.status === 'coletando_dados' || c.status === 'atendimento_humano').length;
       const badge = document.getElementById('badgeConversasPendente');
       if (badge) {
         if (pendentes > 0) {
@@ -2266,14 +2749,57 @@ async function carregarConversas() {
       }
 
       // Se já houver conversa ativa ou seleciona a primeira
-      if (!conversaAtivaId && conversas.length > 0) {
+      if (conversas.length === 0) {
+        conversaAtivaId = null;
+        resetarPainelConversaAtiva();
+      } else if (!conversaAtivaId || !conversas.some(item => item.id === conversaAtivaId)) {
         abrirConversa(conversas[0].id);
-      } else if (conversaAtivaId) {
+      } else {
         abrirConversa(conversaAtivaId);
       }
     }
   } catch (e) {
     console.error('Erro ao carregar conversas:', e);
+  }
+}
+
+function resetarPainelConversaAtiva() {
+  const nomeEl = document.getElementById('chatAtivoNome');
+  const telEl = document.getElementById('chatAtivoTelefone');
+  const acoesEl = document.getElementById('chatAtivoAcoes');
+  const msgEl = document.getElementById('chatAtivoMensagens');
+  const jevBar = document.getElementById('chatJevChecklistBar');
+  const bannerVideo = document.getElementById('chatVideoBanner');
+  const bannerJanela = document.getElementById('chatMetaJanelaBanner');
+  if (nomeEl) nomeEl.textContent = 'Selecione uma conversa';
+  if (telEl) telEl.textContent = '---';
+  if (acoesEl) acoesEl.innerHTML = '';
+  if (jevBar) jevBar.style.display = 'none';
+  if (bannerVideo) bannerVideo.style.display = 'none';
+  if (bannerJanela) bannerJanela.style.display = 'none';
+  if (msgEl) {
+    msgEl.innerHTML = '<div class="empty-state">Nenhuma conversa registrada ainda. As mensagens recebidas pelo WhatsApp aparecerão aqui.</div>';
+  }
+}
+
+async function limparConversasChatbot() {
+  if (!confirm('Limpar todas as conversas registradas no Chatbot? (Os orçamentos já gerados serão mantidos.)')) {
+    return;
+  }
+  try {
+    const res = await fetch('/api/inbound/conversas', { method: 'DELETE' });
+    const data = await res.json();
+    if (data.sucesso) {
+      conversas = [];
+      conversaAtivaId = null;
+      renderizarListaConversas();
+      resetarPainelConversaAtiva();
+      const badge = document.getElementById('badgeConversasPendente');
+      if (badge) badge.style.display = 'none';
+      avisar('🧹 Histórico de conversas do chatbot limpo.');
+    }
+  } catch (e) {
+    mostrarErro('Erro ao limpar conversas: ' + e.message);
   }
 }
 
@@ -2289,7 +2815,7 @@ function renderizarListaConversas() {
   ul.innerHTML = conversas.map(c => {
     const ultimaMsg = (c.mensagens && c.mensagens.length) ? c.mensagens[c.mensagens.length - 1].texto : (c.descricaoServico || 'Sem mensagens');
     const badgeStatus = c.status === 'orcamento_gerado' ? '<span class="badge badge-aprovado">Orçamento Criado</span>' : '<span class="badge badge-pendente">Pendente</span>';
-    
+
     const isSite = c.canalOrigem === 'site';
     const iconeOrigem = isSite ? '🌐' : '📱';
     const tagOrigem = isSite ? '<span class="badge badge-origem-site" style="font-size:9px; padding:2px 6px;">🌐 Site</span>' : '<span class="badge badge-origem-whatsapp" style="font-size:9px; padding:2px 6px;">📱 WhatsApp</span>';
@@ -2335,12 +2861,36 @@ function abrirConversa(id) {
   const origemTxt = c.canalOrigem === 'site' ? '🌐 Formulário do Site' : '📱 WhatsApp';
   document.getElementById('chatAtivoTelefone').textContent = `${c.cliente?.telefone || ''} · ${c.cliente?.empresa || ''} · ${origemTxt}`;
 
-  // Botões de Ação no topo da conversa
+  // Botões de Ação no topo da conversa (Orçamento + Pausa/Reativação IA)
   const acoesBox = document.getElementById('chatAtivoAcoes');
-  if (c.orcamentoId) {
-    acoesBox.innerHTML = `<button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11px;" onclick="abrirOrcamentoPorId('${c.orcamentoId}')">📄 Abrir Orçamento #${c.orcamentoNumero || ''}</button>`;
-  } else {
-    acoesBox.innerHTML = `<button type="button" class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="gerarOrcamentoDaConversa('${c.id}')">✨ Gerar Orçamento desta Conversa</button>`;
+  const iaAtiva = c.aiEnabled !== false;
+  const btnIaHtml = `<button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11px; margin-right:6px; ${iaAtiva ? 'color:#15803D; border-color:#86EFAC; background:#F0FDF4;' : 'color:#B45309; border-color:#FCD34D; background:#FFFBEB;'}" onclick="toggleIAConversa('${c.id}', ${!iaAtiva})" title="Clique para alternar entre IA automática e atendimento humano">${iaAtiva ? '🤖 IA Ativa' : '👤 Humano Assumiu'}</button>`;
+  const btnOrcHtml = c.orcamentoId
+    ? `<button type="button" class="btn btn-ghost" style="padding:5px 10px; font-size:11px;" onclick="abrirOrcamentoPorId('${c.orcamentoId}')">📄 Abrir Orçamento #${c.orcamentoNumero || ''}</button>`
+    : `<button type="button" class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="gerarOrcamentoDaConversa('${c.id}')">✨ Gerar Orçamento desta Conversa</button>`;
+  acoesBox.innerHTML = btnIaHtml + btnOrcHtml;
+
+  // Barra de Checklist do JEV System One
+  const jevBar = document.getElementById('chatJevChecklistBar');
+  if (jevBar) {
+    const chk = c.jevState?.checklistObrigatorio;
+    const dc = c.jevState?.dadosColetados || {};
+    if (chk) {
+      jevBar.style.display = 'flex';
+      const pill = (ok, label) => `<span class="${ok ? 'jev-pill-ok' : 'jev-pill-miss'}">${ok ? '✓' : '○'} ${label}</span>`;
+      const pill3d = dc.possui_modelagem_3d === true
+        ? '<span class="jev-pill-ok">✓ 3D Próprio</span>'
+        : (dc.incluir_modelagem_3d ? '<span class="jev-pill-info">🧊 Incluir 3D</span>' : '<span class="jev-pill-info">🧊 3D: N/I</span>');
+      jevBar.innerHTML = `<b style="color:var(--azul); font-size:10px; text-transform:uppercase;">JEV:</b>` +
+        pill(chk.descricao_ok, 'Peça/Serviço') +
+        pill(chk.dimensoes_ou_desenho_ok, 'Medidas/Desenho') +
+        pill(chk.material_ok, 'Material') +
+        pill(chk.quantidade_ok, 'Quantidade') +
+        pill3d +
+        (c.jevState?.prontoParaOrcamento ? '<span class="jev-pill-ok">🚀 Pronto p/ V1</span>' : '');
+    } else {
+      jevBar.style.display = 'none';
+    }
   }
 
   // Banner Informativo de Vídeo na Conversa Selecionada
@@ -2447,6 +2997,24 @@ function abrirConversa(id) {
  * - Se expirada: abre o WhatsApp Web pré-preenchido para envio gratuito manual
  * - Se dentro de 24h: envia normalmente pela API
  */
+async function toggleIAConversa(conversaId, novoEstado) {
+  try {
+    const res = await fetch(`/api/inbound/conversas/${conversaId}/toggle-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aiEnabled: novoEstado })
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      avisar(data.aiEnabled ? '🤖 IA reativada nesta conversa!' : '👤 IA pausada — atendimento assumido por humano.');
+      await carregarConversas();
+      abrirConversa(conversaId);
+    }
+  } catch (e) {
+    mostrarErro('Erro ao alternar estado da IA: ' + e.message);
+  }
+}
+
 async function enviarMensagemAtendenteOuCliente() {
   const input = document.getElementById('inputChatMsg');
   const texto = input.value.trim();
@@ -2491,16 +3059,23 @@ async function enviarMensagemAtendenteOuCliente() {
       console.error(e);
     }
   } else {
-    // Janela ativa: envio direto normal
+    // Janela ativa: envia como atendente humano via Meta Cloud API Oficial
     input.value = '';
     try {
       const res = await fetch(`/api/inbound/conversas/${conversaAtivaId}/mensagem`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, remetente: 'bot' })
+        body: JSON.stringify({ texto, remetente: 'atendente' })
       });
       const data = await res.json();
       if (data.sucesso) {
+        if (data.envioMeta?.simulado) {
+          avisar('ℹ️ Mensagem registrada (Meta API em modo simulação — configure Token e Phone ID em Configurações).');
+        } else if (data.envioMeta?.erro) {
+          avisar(`⚠️ Mensagem salva no chat, mas Meta API retornou: ${data.envioMeta.erro}`);
+        } else if (data.envioMeta?.sucesso) {
+          avisar('✅ Mensagem enviada via WhatsApp Cloud API Oficial!');
+        }
         await carregarConversas();
         abrirConversa(conversaAtivaId);
       }
@@ -2511,31 +3086,48 @@ async function enviarMensagemAtendenteOuCliente() {
 }
 
 /**
- * Simula uma mensagem de cliente entrando pelo WhatsApp para testar a reabertura da janela de 24h
+ * Simula uma mensagem de cliente entrando pelo motor oficial do Chatbot + JEV (gera orçamento V1 automaticamente ao completar os 4 dados)
  */
 async function simularMensagemClienteEntrando() {
-  if (!conversaAtivaId) {
-    mostrarErro('Selecione uma conversa primeiro.');
-    return;
-  }
+  const c = conversaAtivaId ? conversas.find(item => item.id === conversaAtivaId) : null;
+  const telefone = c?.cliente?.telefone || '5579999990001';
+  const nome = c?.cliente?.nome || 'Cliente Simulador';
 
-  const texto = prompt('Digite a mensagem simulada do cliente para reabrir a janela de 24h:', 'Olá! Conseguem fazer esse orçamento para entregar até sexta-feira?');
+  const texto = prompt(
+    `Simular mensagem do cliente (${nome} / ${telefone}) para o motor JEV:`,
+    'Preciso de 2 eixos Ø60x450mm em aço 1045, não tenho modelagem 3D e preciso incluir no orçamento.'
+  );
   if (!texto || !texto.trim()) return;
 
+  avisar('🤖 Processando mensagem no motor JEV...');
   try {
-    const res = await fetch(`/api/inbound/conversas/${conversaAtivaId}/mensagem`, {
+    const res = await fetch('/api/inbound/simular', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto: texto.trim(), remetente: 'cliente' })
+      body: JSON.stringify({
+        telefone,
+        nome,
+        mensagem: texto.trim(),
+        tipoMidia: 'text'
+      })
     });
     const data = await res.json();
     if (data.sucesso) {
-      avisar('Mensagem do cliente simulada com sucesso! Janela de 24h da Meta reaberta.');
+      if (data.orcamentoGerado) {
+        avisar(`🎉 JEV validou os 4 dados e gerou o pré-orçamento V1 #${data.orcamentoGerado.numero} para aprovação do orçamentista!`, 8000);
+        await carregarSalvos();
+      } else {
+        avisar('✅ Resposta gerada pelo Chatbot JEV!');
+      }
       await carregarConversas();
-      abrirConversa(conversaAtivaId);
+      if (data.conversa?.id) {
+        abrirConversa(data.conversa.id);
+      }
+    } else {
+      mostrarErro(data.erro || 'Erro no simulador JEV.');
     }
   } catch (e) {
-    mostrarErro('Erro ao simular cliente.');
+    mostrarErro('Erro ao simular cliente no motor JEV: ' + e.message);
   }
 }
 
@@ -2746,7 +3338,7 @@ function renderAbertos() {
     const isEnviado = isOrcamentoEnviado(s);
     const isAjuste = isOrcamentoAjuste(s);
     const dataFormatada = s.data || (s.dataCriacao ? s.dataCriacao.split('T')[0] : '');
-    
+
     let badgeOrigem = '<span class="badge-origem-manual">👤 Manual</span>';
     if (s.origem === 'site') {
       badgeOrigem = '<span class="badge-origem-site">🌐 Site</span>';
@@ -2802,6 +3394,7 @@ function renderAbertos() {
     const unidTotal = s.unidadePeca || 'PÇ';
     const totalVal = s.totais?.totalFinal || 0;
     const unitVal = s.totais?.valorUnitarioPeca || (totalVal > 0 ? (totalVal / qtdTotal) : 0);
+    const descricaoCurta = s.descricaoServico ? (s.descricaoServico.length > 65 ? s.descricaoServico.slice(0, 62) + '...' : s.descricaoServico) : '---';
 
     return `
       <tr style="${rowStyle}">
@@ -2833,7 +3426,7 @@ async function abrirOuIniciarOrcamento(id) {
 
     // Se o pedido era NOVO, atualiza no servidor para EM_ANDAMENTO
     if (eraNovo) {
-      fetch(`/api/orcamentos/${id}/iniciar`, { method: 'PATCH' }).catch(() => {});
+      fetch(`/api/orcamentos/${id}/iniciar`, { method: 'PATCH' }).catch(() => { });
       if (oLocal) {
         oLocal.visualizado = true;
         oLocal.status = 'EM_ANDAMENTO';
@@ -2941,7 +3534,7 @@ function renderSalvos() {
 
   tbody.innerHTML = listaFiltrada.map(s => {
     const dataFormatada = s.data || (s.dataCriacao ? s.dataCriacao.split('T')[0] : '');
-    
+
     let badgeOrigem = '<span class="badge-origem-manual">👤 Manual</span>';
     if (s.origem === 'site') {
       badgeOrigem = '<span class="badge-origem-site">🌐 Site</span>';
@@ -2966,6 +3559,7 @@ function renderSalvos() {
         <td>${badgeOrigem}</td>
         <td><b>${escapeAttr(s.cliente?.nome || '(sem nome)')}</b></td>
         <td style="font-size:12px; color:var(--texto-suave);">${escapeHTML(descricaoCurta)}</td>
+        <td style="color:var(--texto-suave); font-size:12px;">${escapeAttr(dataFormatada)}</td>
         <td class="num">
           <b>${fmt(s.totais?.totalFinal || 0)}</b>
           <div style="font-size:11px; color:var(--texto-suave); font-weight:normal; margin-top:2px;">
@@ -3258,12 +3852,12 @@ function filtrarListaClientes(termo) {
   }
   const filtrados = clientesCadastrados.filter(c => {
     return (c.nome && c.nome.toLowerCase().includes(t)) ||
-           (c.telefone && c.telefone.toLowerCase().includes(t)) ||
-           (c.email && c.email.toLowerCase().includes(t)) ||
-           (c.endereco && c.endereco.toLowerCase().includes(t)) ||
-           (c.cep && c.cep.toLowerCase().includes(t)) ||
-           (c.contato && c.contato.toLowerCase().includes(t)) ||
-           (c.documento && c.documento.toLowerCase().includes(t));
+      (c.telefone && c.telefone.toLowerCase().includes(t)) ||
+      (c.email && c.email.toLowerCase().includes(t)) ||
+      (c.endereco && c.endereco.toLowerCase().includes(t)) ||
+      (c.cep && c.cep.toLowerCase().includes(t)) ||
+      (c.contato && c.contato.toLowerCase().includes(t)) ||
+      (c.documento && c.documento.toLowerCase().includes(t));
   });
   renderTabelaClientes(filtrados);
 }
@@ -3284,7 +3878,7 @@ function iniciarOrcamentoParaCliente(clienteId) {
   arquivosPendentes = [];
   renderArquivosPendentes();
   mudarEtapaOrcamento('coleta');
-  
+
   const sel = document.getElementById('selectClienteCadastrado');
   if (sel) sel.value = cliente.id;
 
@@ -3409,7 +4003,7 @@ function catalogoInsumoRowHTML(i) {
     '<td><input list="lista-unidades-insumos" class="c-unidade" value="' + escapeAttr(i.unidade || 'UN') + '" style="text-align:center; text-transform:uppercase;" placeholder="KG, PÇ..." onchange="this.value = this.value.toUpperCase();"></td>' +
     '<td><input type="number" step="0.0001" class="c-preco num" value="' + i.preco + '" placeholder="0,00"></td>' +
     '<td style="text-align:center;"><button type="button" class="rm" onclick="this.closest(\'tr\').remove();">✕</button></td>' +
-  '</tr>';
+    '</tr>';
 }
 
 function renderInsumosCatalogo() {
@@ -3477,13 +4071,13 @@ function catalogoMaquinaRowHTML(m) {
 
   return '<tr data-id="' + escapeAttr(m.id) + '">' +
     '<td>' +
-      '<input class="c-nome" value="' + escapeAttr(m.nome) + '" placeholder="Nome da máquina" style="font-weight:600;">' +
-      (subDetalhes ? '<div style="font-size:11px; color:var(--texto-suave); margin-top:3px;">🏭 ' + escapeAttr(subDetalhes) + '</div>' : '') +
-      '<input type="hidden" class="c-marca" value="' + escapeAttr(m.marca || '') + '">' +
-      '<input type="hidden" class="c-modelo" value="' + escapeAttr(m.modelo || '') + '">' +
-      '<input type="hidden" class="c-ano" value="' + escapeAttr(m.ano || '') + '">' +
-      '<input type="hidden" class="c-descricao" value="' + escapeAttr(m.descricao || '') + '">' +
-      '<input type="hidden" class="c-observacoes" value="' + escapeAttr(m.observacoes || '') + '">' +
+    '<input class="c-nome" value="' + escapeAttr(m.nome) + '" placeholder="Nome da máquina" style="font-weight:600;">' +
+    (subDetalhes ? '<div style="font-size:11px; color:var(--texto-suave); margin-top:3px;">🏭 ' + escapeAttr(subDetalhes) + '</div>' : '') +
+    '<input type="hidden" class="c-marca" value="' + escapeAttr(m.marca || '') + '">' +
+    '<input type="hidden" class="c-modelo" value="' + escapeAttr(m.modelo || '') + '">' +
+    '<input type="hidden" class="c-ano" value="' + escapeAttr(m.ano || '') + '">' +
+    '<input type="hidden" class="c-descricao" value="' + escapeAttr(m.descricao || '') + '">' +
+    '<input type="hidden" class="c-observacoes" value="' + escapeAttr(m.observacoes || '') + '">' +
     '</td>' +
     '<td><input class="c-categoria" value="' + escapeAttr(m.categoria || '') + '" placeholder="Categoria" style="font-size:12px;"></td>' +
     '<td><input class="c-capacidade" value="' + escapeAttr(m.capacidade || '') + '" placeholder="Dimensões máximas e capacidade" style="font-size:12px;" title="' + escapeAttr(m.observacoes || m.descricao || '') + '"></td>' +
@@ -3491,7 +4085,7 @@ function catalogoMaquinaRowHTML(m) {
     '<td><input type="number" step="0.01" class="c-h50 num" value="' + h50Val + '"></td>' +
     '<td><input type="number" step="0.01" class="c-h100 num" value="' + h100Val + '"></td>' +
     '<td style="text-align:center;"><button type="button" class="rm" onclick="this.closest(\'tr\').remove(); filtrarTabelaMaquinas();">✕</button></td>' +
-  '</tr>';
+    '</tr>';
 }
 
 function renderMaquinasCatalogo() {
@@ -3594,8 +4188,6 @@ function renderDatalistMaquinas() {
    CONFIGURAÇÕES
 --------------------------------------------------------------- */
 function renderConfig() {
-  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : ''; };
-
   setVal('cfgNomeEmpresa', config.nomeEmpresa);
   setVal('cfgCidade', config.cidade);
   setVal('cfgDespFixasInsumo', (num(config.despFixasInsumo) * 100).toFixed(2));
@@ -3614,11 +4206,30 @@ function renderConfig() {
   setVal('cfgModeloGerador', config.modeloGerador || 'anthropic/claude-sonnet-5.5');
   setVal('cfgModeloRoteador', config.modeloRoteador || 'google/gemini-2.5-flash');
   setVal('cfgModeloEconomico', config.modeloEconomico || 'qwen/qwen3.8-max-prime');
+  setVal('cfgModeloAnaliseAprendizado', config.modeloAnaliseAprendizado || 'google/gemini-2.5-flash');
+
+  setVal('cfgGroqApiKey', config.groqApiKey || '');
+  setVal('cfgChatbotDebounceMs', config.chatbotDebounceMs !== undefined ? config.chatbotDebounceMs : 6000);
+  const defaultWebhookUrl = `${window.location.origin}/api/webhook/meta`;
+  setVal('cfgAutomatasHubUrl', config.automatasHubUrl || 'https://api.automatas.tech');
+  setVal('cfgAutomatasSiteUrl', config.automatasSiteUrl || 'https://automatas.tech');
+  setVal('cfgAutomatasLoginJwt', config.automatasLoginJwt || '');
+  setVal('cfgAutomatasApiKey', config.automatasProjectApiKey || '');
+  setVal('cfgAutomatasWebhookUrl', config.automatasWebhookUrl || defaultWebhookUrl);
+  setVal('setupHubUrl', config.automatasHubUrl || 'https://api.automatas.tech');
+  setVal('setupHubSiteUrl', config.automatasSiteUrl || 'https://automatas.tech');
+  setVal('setupHubLoginJwt', config.automatasLoginJwt || '');
+  setVal('setupHubApiKey', config.automatasProjectApiKey || '');
+  setVal('setupHubWebhookUrl', config.automatasWebhookUrl || defaultWebhookUrl);
+  if (typeof atualizarEstadoBotaoLoginHubUI === 'function') {
+    atualizarEstadoBotaoLoginHubUI();
+  }
 
   document.getElementById('cidadeHeader').textContent = config.cidade || 'Aracaju/SE';
 }
 
 async function salvarConfiguracoes() {
+  const defaultWebhookUrl = `${window.location.origin}/api/webhook/meta`;
   config = {
     ...config,
     nomeEmpresa: document.getElementById('cfgNomeEmpresa').value.trim() || config.nomeEmpresa,
@@ -3636,6 +4247,14 @@ async function salvarConfiguracoes() {
     modeloGerador: document.getElementById('cfgModeloGerador').value.trim() || 'anthropic/claude-sonnet-5.5',
     modeloRoteador: document.getElementById('cfgModeloRoteador').value.trim() || 'google/gemini-2.5-flash',
     modeloEconomico: document.getElementById('cfgModeloEconomico').value.trim() || 'qwen/qwen3.8-max-prime',
+    modeloAnaliseAprendizado: document.getElementById('cfgModeloAnaliseAprendizado')?.value.trim() || 'google/gemini-2.5-flash',
+    groqApiKey: document.getElementById('cfgGroqApiKey')?.value.trim() || '',
+    chatbotDebounceMs: parseInt(document.getElementById('cfgChatbotDebounceMs')?.value || '6000', 10) || 6000,
+    automatasHubUrl: document.getElementById('cfgAutomatasHubUrl')?.value.trim() || 'https://api.automatas.tech',
+    automatasSiteUrl: document.getElementById('cfgAutomatasSiteUrl')?.value.trim() || 'https://automatas.tech',
+    automatasLoginJwt: document.getElementById('cfgAutomatasLoginJwt')?.value.trim() || '',
+    automatasProjectApiKey: document.getElementById('cfgAutomatasApiKey')?.value.trim() || '',
+    automatasWebhookUrl: document.getElementById('cfgAutomatasWebhookUrl')?.value.trim() || defaultWebhookUrl
   };
 
   try {
@@ -3648,11 +4267,914 @@ async function salvarConfiguracoes() {
     if (data.sucesso) {
       config = data.config;
       document.getElementById('cidadeHeader').textContent = config.cidade;
+      if (!orcOriginal?.margensPersonalizadas?.ativa) {
+        carregarMargensNoFormulario({ margensPersonalizadas: null });
+      }
       calcularTotais();
       avisar('Configurações salvas.');
     }
   } catch (e) {
     mostrarErro('Erro ao salvar configurações.');
+  }
+}
+
+async function testarConexaoMetaAPI() {
+  const statusBox = document.getElementById('metaTesteStatus');
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#EFF6FF';
+    statusBox.style.color = '#1E40AF';
+    statusBox.style.border = '1px solid #BFDBFE';
+    statusBox.textContent = '⏳ Testando conexão com a Meta WhatsApp Cloud API...';
+  }
+
+  try {
+    const res = await fetch('/api/config/testar-meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      if (statusBox) {
+        statusBox.style.background = '#DCFCE7';
+        statusBox.style.color = '#166534';
+        statusBox.style.border = '1px solid #86EFAC';
+        statusBox.innerHTML = `✅ <b>Conectado com sucesso à Meta Graph API!</b> Número: <b>${escapeHTML(data.displayPhoneNumber || data.id)}</b> · Nome Verificado: <b>${escapeHTML(data.verifiedName || 'N/A')}</b> · Qualidade: <b>${escapeHTML(data.qualityRating || 'N/A')}</b>`;
+      }
+      avisar('✅ Conexão com Meta Cloud API verificada!');
+    } else {
+      if (statusBox) {
+        statusBox.style.background = '#FEF2F2';
+        statusBox.style.color = '#B91C1C';
+        statusBox.style.border = '1px solid #FECACA';
+        statusBox.textContent = `❌ Falha na conexão Meta API: ${data.erro || 'Credenciais inválidas'}`;
+      }
+    }
+  } catch (e) {
+    if (statusBox) {
+      statusBox.style.background = '#FEF2F2';
+      statusBox.style.color = '#B91C1C';
+      statusBox.style.border = '1px solid #FECACA';
+      statusBox.textContent = `❌ Erro ao testar Meta API: ${e.message}`;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------
+   FACEBOOK LOGIN & META WHATSAPP EMBEDDED SIGNUP
+--------------------------------------------------------------- */
+let metaAuthState = {
+  mode: 'direct',
+  hubEnabled: false,
+  hubConnected: false,
+  hubUrl: 'https://api.automatas.tech',
+  hubSiteUrl: 'https://automatas.tech',
+  hubLoginJwt: '',
+  hasHubLoginJwt: false,
+  hasHubApiKey: false,
+  hubWebhookUrl: '',
+  hasHubWebhookSecret: false,
+  hubProject: null,
+  hubError: '',
+  connected: false,
+  appId: '',
+  configId: '',
+  apiVersion: 'v24.0',
+  activePhoneNumberId: '',
+  envFallback: null,
+  accounts: []
+};
+let contatosTesteState = {
+  modoSomenteTestes: false,
+  contatos: []
+};
+let fbSdkPromise = null;
+let fbSdkLoadedAppId = null;
+
+function sincronizarCheckCoexistencia(marcado) {
+  const val = Boolean(marcado);
+  ['chkCoexistenciaChatbot', 'chkCoexistenciaSetup'].forEach(id => {
+    const chk = document.getElementById(id);
+    if (chk && chk.checked !== val) chk.checked = val;
+  });
+}
+
+function getCredenciaisHubAtuaisUI() {
+  const loginJwt = (
+    document.getElementById('setupHubLoginJwt')?.value ||
+    document.getElementById('cfgAutomatasLoginJwt')?.value ||
+    metaAuthState.hubLoginJwt ||
+    config.automatasLoginJwt ||
+    ''
+  ).trim();
+  const apiKey = (
+    document.getElementById('setupHubApiKey')?.value ||
+    document.getElementById('cfgAutomatasApiKey')?.value ||
+    config.automatasProjectApiKey ||
+    ''
+  ).trim();
+  return {
+    loginJwt,
+    apiKey,
+    hasLoginJwt: Boolean(loginJwt || metaAuthState.hasHubLoginJwt),
+    hasApiKey: Boolean(apiKey || metaAuthState.hasHubApiKey)
+  };
+}
+
+function atualizarEstadoBotaoLoginHubUI() {
+  const { hasLoginJwt, hasApiKey } = getCredenciaisHubAtuaisUI();
+  const hubLoginLiberado = hasLoginJwt || hasApiKey;
+
+  [
+    { btnId: 'btnConectarAutomatasSetup', badgeId: 'setupHubLoginStatusBadge' },
+    { btnId: 'btnConectarAutomatasConfig', badgeId: 'cfgHubLoginStatusBadge' }
+  ].forEach(({ btnId, badgeId }) => {
+    const btn = document.getElementById(btnId);
+    const badge = document.getElementById(badgeId);
+    if (btn) {
+      btn.disabled = !hubLoginLiberado;
+      btn.style.opacity = hubLoginLiberado ? '1' : '0.55';
+      btn.style.cursor = hubLoginLiberado ? 'pointer' : 'not-allowed';
+      btn.title = hubLoginLiberado
+        ? 'Abrir portal oficial do Automatas Hub para conectar WhatsApp'
+        : 'Informe o Token de Login (JWT) ou API Key para liberar o botão';
+    }
+    if (badge) {
+      if (hasLoginJwt && hasApiKey) {
+        badge.style.background = '#DCFCE7';
+        badge.style.color = '#166534';
+        badge.style.borderColor = '#86EFAC';
+        badge.textContent = '🔓 Login Liberado + API Key ativa';
+      } else if (hasLoginJwt) {
+        badge.style.background = '#DBEAFE';
+        badge.style.color = '#1E40AF';
+        badge.style.borderColor = '#93C5FD';
+        badge.textContent = '🔓 Token JWT liberado (adicione a API Key p/ dados WhatsApp)';
+      } else if (hasApiKey) {
+        badge.style.background = '#DBEAFE';
+        badge.style.color = '#1E40AF';
+        badge.style.borderColor = '#93C5FD';
+        badge.textContent = '🔑 API Key pronta (sincroniza o Token de Login ao conectar)';
+      } else {
+        badge.style.background = '#FEF3C7';
+        badge.style.color = '#92400E';
+        badge.style.borderColor = '#FDE68A';
+        badge.textContent = '🔒 Informe o Token JWT ou API Key';
+      }
+    }
+  });
+
+  ['btnConectarFacebookHero', 'btnConectarFacebookConfig'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = !hubLoginLiberado;
+    btn.style.opacity = hubLoginLiberado ? '1' : '0.6';
+    btn.style.cursor = hubLoginLiberado ? 'pointer' : 'not-allowed';
+    btn.title = hubLoginLiberado
+      ? 'Conectar WhatsApp Business com Facebook via Automatas Hub'
+      : 'Informe o Token de Login (JWT) ou API Key do Automatas Hub para liberar';
+  });
+
+  const hint = document.getElementById('setupHubApiKeyHint');
+  if (hint) {
+    if (metaAuthState.hasHubApiKey) {
+      hint.style.display = 'block';
+      hint.textContent = '✅ API Key configurada no servidor (usada para webhook e dados do WhatsApp).';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+}
+
+async function copiarWebhookMetaUrl(origem = 'setup') {
+  const inputId = origem === 'config' ? 'cfgAutomatasWebhookUrl' : 'setupHubWebhookUrl';
+  const url = (document.getElementById(inputId)?.value || `${window.location.origin}/api/webhook/meta`).trim();
+  try {
+    await navigator.clipboard.writeText(url);
+    avisar('📋 URL do Webhook copiada!');
+  } catch {
+    mostrarFeedbackMetaFacebook(`ℹ️ Copie a URL do Webhook: <code>${escapeHTML(url)}</code>`, 'info');
+  }
+}
+
+function mostrarFeedbackMetaFacebook(texto, tipo = 'info') {
+  const boxes = [
+    document.getElementById('chatbotMetaFeedback'),
+    document.getElementById('chatbotSetupFeedback'),
+    document.getElementById('metaTesteStatus')
+  ].filter(Boolean);
+
+  const paleta = {
+    success: { bg: '#DCFCE7', fg: '#166534', bd: '#86EFAC' },
+    error: { bg: '#FEF2F2', fg: '#B91C1C', bd: '#FECACA' },
+    info: { bg: '#EFF6FF', fg: '#1E40AF', bd: '#BFDBFE' }
+  }[tipo] || { bg: '#EFF6FF', fg: '#1E40AF', bd: '#BFDBFE' };
+
+  boxes.forEach(box => {
+    box.style.display = 'block';
+    box.style.background = paleta.bg;
+    box.style.color = paleta.fg;
+    box.style.border = `1px solid ${paleta.bd}`;
+    box.innerHTML = texto;
+  });
+}
+
+function atualizarTelaConexaoChatbot() {
+  const setupView = document.getElementById('chatbotSemConexaoView');
+  const convView = document.getElementById('chatbotConversasView');
+  const conectado = Boolean(metaAuthState.connected && (metaAuthState.accounts || []).length > 0);
+
+  if (setupView) setupView.style.display = conectado ? 'none' : 'block';
+  if (convView) convView.style.display = conectado ? 'block' : 'none';
+  atualizarEstadoBotaoLoginHubUI();
+}
+
+async function carregarEstadoMetaAuth() {
+  try {
+    const res = await fetch('/api/meta/auth');
+    const data = await res.json();
+    if (!data.sucesso) return;
+    metaAuthState = {
+      mode: data.mode || 'hub',
+      hubEnabled: Boolean(data.hubEnabled),
+      hubConnected: Boolean(data.hubConnected),
+      hubUrl: data.hubUrl || config.automatasHubUrl || 'https://api.automatas.tech',
+      hubSiteUrl: data.hubSiteUrl || config.automatasSiteUrl || 'https://automatas.tech',
+      hubLoginJwt: data.hubLoginJwt || '',
+      hasHubLoginJwt: Boolean(data.hasHubLoginJwt || data.hubLoginJwt),
+      hasHubApiKey: Boolean(data.hasHubApiKey),
+      hubWebhookUrl: data.hubWebhookUrl || config.automatasWebhookUrl || `${window.location.origin}/api/webhook/meta`,
+      hasHubWebhookSecret: Boolean(data.hasHubWebhookSecret),
+      hubProject: data.hubProject || null,
+      hubError: data.hubError || '',
+      connected: Boolean(data.connected && Array.isArray(data.accounts) && data.accounts.length > 0),
+      activePhoneNumberId: data.activePhoneNumberId || '',
+      accounts: Array.isArray(data.accounts) ? data.accounts : []
+    };
+    if (metaAuthState.hubLoginJwt) {
+      if (!document.getElementById('setupHubLoginJwt')?.value) setVal('setupHubLoginJwt', metaAuthState.hubLoginJwt);
+      if (!document.getElementById('cfgAutomatasLoginJwt')?.value) setVal('cfgAutomatasLoginJwt', metaAuthState.hubLoginJwt);
+    }
+    if (metaAuthState.hubWebhookUrl) {
+      if (!config.automatasWebhookUrl || !document.getElementById('setupHubWebhookUrl')?.value) {
+        setVal('setupHubWebhookUrl', metaAuthState.hubWebhookUrl);
+      }
+      if (!config.automatasWebhookUrl || !document.getElementById('cfgAutomatasWebhookUrl')?.value) {
+        setVal('cfgAutomatasWebhookUrl', metaAuthState.hubWebhookUrl);
+      }
+    }
+    atualizarEstadoBotaoLoginHubUI();
+    renderizarContasWhatsappMeta();
+  } catch (e) {
+    console.warn('Aviso ao carregar estado Meta Auth:', e);
+  }
+}
+
+async function salvarESincronizarHub(origem = 'setup') {
+  const isCfg = origem === 'config';
+  const defaultWebhookUrl = `${window.location.origin}/api/webhook/meta`;
+  const hubUrl = (document.getElementById(isCfg ? 'cfgAutomatasHubUrl' : 'setupHubUrl')?.value || 'https://api.automatas.tech').trim();
+  const siteUrl = (document.getElementById(isCfg ? 'cfgAutomatasSiteUrl' : 'setupHubSiteUrl')?.value || 'https://automatas.tech').trim();
+  const loginJwt = (document.getElementById(isCfg ? 'cfgAutomatasLoginJwt' : 'setupHubLoginJwt')?.value || '').trim();
+  const apiKeyInput = document.getElementById(isCfg ? 'cfgAutomatasApiKey' : 'setupHubApiKey');
+  const apiKey = (apiKeyInput?.value || '').trim();
+  const webhookUrl = (document.getElementById(isCfg ? 'cfgAutomatasWebhookUrl' : 'setupHubWebhookUrl')?.value || defaultWebhookUrl).trim();
+
+  if (!hubUrl || (!loginJwt && !apiKey && !metaAuthState.hasHubApiKey && !metaAuthState.hasHubLoginJwt)) {
+    mostrarFeedbackMetaFacebook('❌ Informe a URL do Hub Automatas e o Token de Login (JWT) ou a API Key do projeto (aut_live_...).', 'error');
+    return null;
+  }
+
+  mostrarFeedbackMetaFacebook('⏳ Conectando e sincronizando projeto no Automatas Hub...', 'info');
+  try {
+    const payload = { hubUrl, siteUrl, loginJwt, webhookUrl };
+    if (apiKey || !metaAuthState.hasHubApiKey || config.automatasProjectApiKey) {
+      payload.apiKey = apiKey;
+    }
+
+    const res = await fetch('/api/meta/hub/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.sucesso) {
+      mostrarFeedbackMetaFacebook(`❌ ${escapeHTML(data.erro || 'Falha ao sincronizar com Automatas Hub.')}`, 'error');
+      return null;
+    }
+
+    const syncedJwt = (data.hubLoginJwt || loginJwt || '').trim();
+    const syncedWebhookUrl = (data.hubWebhookUrl || webhookUrl || defaultWebhookUrl).trim();
+
+    config = {
+      ...config,
+      automatasHubUrl: hubUrl,
+      automatasSiteUrl: siteUrl,
+      automatasLoginJwt: syncedJwt,
+      automatasWebhookUrl: syncedWebhookUrl,
+      ...(apiKey !== '' ? { automatasProjectApiKey: apiKey } : {})
+    };
+
+    setVal('cfgAutomatasHubUrl', hubUrl);
+    setVal('cfgAutomatasSiteUrl', siteUrl);
+    setVal('cfgAutomatasLoginJwt', syncedJwt);
+    setVal('cfgAutomatasApiKey', apiKey);
+    setVal('cfgAutomatasWebhookUrl', syncedWebhookUrl);
+    setVal('setupHubUrl', hubUrl);
+    setVal('setupHubSiteUrl', siteUrl);
+    setVal('setupHubLoginJwt', syncedJwt);
+    setVal('setupHubApiKey', apiKey);
+    setVal('setupHubWebhookUrl', syncedWebhookUrl);
+
+    metaAuthState = {
+      mode: data.mode || 'hub',
+      hubEnabled: Boolean(data.hubEnabled),
+      hubConnected: Boolean(data.hubConnected),
+      hubUrl: data.hubUrl || hubUrl,
+      hubSiteUrl: data.hubSiteUrl || siteUrl,
+      hubLoginJwt: syncedJwt,
+      hasHubLoginJwt: Boolean(data.hasHubLoginJwt || syncedJwt),
+      hasHubApiKey: Boolean(data.hasHubApiKey || apiKey),
+      hubWebhookUrl: syncedWebhookUrl,
+      hasHubWebhookSecret: Boolean(data.hasHubWebhookSecret),
+      hubProject: data.hubProject || null,
+      hubError: data.hubError || '',
+      connected: Boolean(data.connected && Array.isArray(data.accounts) && data.accounts.length > 0),
+      activePhoneNumberId: data.activePhoneNumberId || '',
+      accounts: Array.isArray(data.accounts) ? data.accounts : []
+    };
+    atualizarEstadoBotaoLoginHubUI();
+    renderizarContasWhatsappMeta();
+
+    if (data.hubError) {
+      mostrarFeedbackMetaFacebook(`⚠️ Hub salvo, mas retornou aviso: ${escapeHTML(data.hubError)}`, 'error');
+      return data;
+    }
+    const nomeProj = data.hubProject?.name ? `Projeto "${escapeHTML(data.hubProject.name)}"` : 'Projeto';
+    const avisoWebhook = data.hubWarning
+      ? ` · ⚠️ ${escapeHTML(data.hubWarning)}`
+      : (data.webhookSynced ? ' · Webhook registrado.' : '');
+    mostrarFeedbackMetaFacebook(
+      `✅ <b>${nomeProj} conectado ao Automatas Hub!</b> ${(data.accounts || []).length} número(s) sincronizado(s)${avisoWebhook}`,
+      data.hubWarning ? 'info' : 'success'
+    );
+    avisar('✅ Projeto sincronizado com o Automatas Hub!');
+    return data;
+  } catch (e) {
+    mostrarFeedbackMetaFacebook(`❌ Erro ao sincronizar Hub: ${escapeHTML(e.message)}`, 'error');
+    return null;
+  }
+}
+
+async function abrirConectarAutomatasHub(origem = 'setup') {
+  const isCfg = origem === 'config';
+  const creds = getCredenciaisHubAtuaisUI();
+  const siteUrl = (
+    document.getElementById(isCfg ? 'cfgAutomatasSiteUrl' : 'setupHubSiteUrl')?.value ||
+    metaAuthState.hubSiteUrl ||
+    config.automatasSiteUrl ||
+    'https://automatas.tech'
+  ).trim().replace(/\/+$/, '');
+
+  if (!creds.hasLoginJwt && !creds.hasApiKey) {
+    mostrarFeedbackMetaFacebook('❌ Informe o Token de Login (JWT) ou a API Key em automatas.tech/app → Projetos & API para liberar o login.', 'error');
+    return;
+  }
+
+  const syncData = await salvarESincronizarHub(origem);
+  if (!syncData || syncData.hubError) return;
+
+  const loginJwt = (syncData.hubLoginJwt || creds.loginJwt || metaAuthState.hubLoginJwt || '').trim();
+  if (!loginJwt) {
+    mostrarFeedbackMetaFacebook('❌ Token de Login (JWT) indisponível para abrir o portal. Gere/cole o Token de Login em automatas.tech/app → Projetos & API.', 'error');
+    return;
+  }
+
+  const coex = (isCfg
+    ? document.getElementById('chkCoexistenciaChatbot')?.checked
+    : document.getElementById('chkCoexistenciaSetup')?.checked) !== false;
+  const popupUrl = `${siteUrl}/conectar?token=${encodeURIComponent(loginJwt)}&channel=whatsapp&returnOrigin=${encodeURIComponent(window.location.origin)}&coexistence=${coex ? '1' : '0'}`;
+  const popup = window.open(popupUrl, 'automatas_hub_connect', 'width=560,height=720,scrollbars=yes');
+  if (!popup) {
+    mostrarFeedbackMetaFacebook(`ℹ️ Pop-up bloqueado. <a href="${escapeAttr(popupUrl)}" target="_blank" style="text-decoration:underline; font-weight:700;">Clique aqui para abrir o portal de conexão do Automatas Hub</a>.`, 'info');
+    return;
+  }
+  mostrarFeedbackMetaFacebook('⏳ Portal oficial aberto no domínio Automatas Hub. Conclua o login com Facebook na janela aberta...', 'info');
+}
+
+window.addEventListener('message', async (event) => {
+  try {
+    const expectedSiteUrl = (metaAuthState.hubSiteUrl || config.automatasSiteUrl || 'https://automatas.tech').trim();
+    let expectedOrigin = 'https://automatas.tech';
+    try {
+      expectedOrigin = new URL(expectedSiteUrl).origin;
+    } catch {}
+    if (event.origin !== expectedOrigin) return;
+    const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+    if (payload && payload.type === 'AUTOMATAS_HUB_CONNECTED') {
+      if (payload.channel && String(payload.channel).toLowerCase() === 'instagram') return;
+      await carregarEstadoMetaAuth();
+      mostrarFeedbackMetaFacebook('✅ <b>Número WhatsApp vinculado via Automatas Hub com sucesso!</b>', 'success');
+      avisar('✅ Número WhatsApp adicionado pelo Automatas Hub!');
+    }
+  } catch { }
+});
+
+function renderizarContasWhatsappMeta() {
+  atualizarTelaConexaoChatbot();
+
+  const resumoEl = document.getElementById('chatbotMetaStatusResumo');
+  const ativo = (metaAuthState.accounts || []).find(a => a.isActive) || metaAuthState.accounts?.[0] || null;
+
+  if (resumoEl) {
+    const hubTag = metaAuthState.hubEnabled
+      ? ` · <span class="badge" style="background:#DBEAFE; color:#1E40AF; border:1px solid #93C5FD; font-size:10px;">🔗 Hub Automatas${metaAuthState.hubProject?.name ? ` (${escapeHTML(metaAuthState.hubProject.name)})` : ''}</span>`
+      : '';
+    if (ativo && ativo.phoneNumberId) {
+      const rotuloNumero = ativo.displayPhoneNumber
+        ? `${escapeHTML(ativo.displayPhoneNumber)} (ID ${escapeHTML(ativo.phoneNumberId)})`
+        : `Phone Number ID: ${escapeHTML(ativo.phoneNumberId)}`;
+      const nomeVerif = ativo.verifiedName ? ` · <b>${escapeHTML(ativo.verifiedName)}</b>` : '';
+      const coexTag = ativo.isCoexistence ? ' · <span class="badge badge-chatbot" style="font-size:10px;">Coexistência</span>' : '';
+      resumoEl.innerHTML = `<span style="color:#15803D; font-weight:700;">● Número ativo:</span> ${rotuloNumero}${nomeVerif}${coexTag}${hubTag}`;
+    } else {
+      resumoEl.innerHTML = `<span style="color:#B45309; font-weight:700;">○ Nenhum número WhatsApp vinculado.</span>${hubTag}`;
+    }
+  }
+
+  const htmlContas = (metaAuthState.accounts || []).length === 0
+    ? ''
+    : metaAuthState.accounts.map(acc => {
+      const pid = escapeAttr(acc.phoneNumberId);
+      const numero = acc.displayPhoneNumber || `ID ${acc.phoneNumberId}`;
+      const nome = acc.verifiedName || acc.userName || 'WhatsApp Business';
+      const badgeAtivo = acc.isActive
+        ? '<span class="badge badge-aprovado" style="font-size:9px;">● Ativo</span>'
+        : `<button type="button" class="btn btn-ghost" style="padding:3px 8px; font-size:10px;" onclick="selecionarContaWhatsapp('${pid}')">Usar este</button>`;
+      const badgeCoex = acc.isCoexistence
+        ? `<button type="button" class="btn btn-ghost" style="padding:3px 7px; font-size:10px;" onclick="sincronizarCoexistenciaWhatsapp('${pid}')" title="Sincronizar contatos e histórico (Coexistência)">↻ Sync</button>`
+        : '';
+      const btnRemover = acc.isDefaultEnv
+        ? ''
+        : `<button type="button" class="btn btn-ghost" style="padding:3px 7px; font-size:10px; color:#B91C1C;" onclick="desconectarContaWhatsapp('${pid}')" title="Remover vínculo">✕</button>`;
+
+      return `
+          <div class="wa-account-pill ${acc.isActive ? 'active' : ''}">
+            <div>
+              <div style="font-weight:700; color:var(--azul-esc);">📱 ${escapeHTML(numero)}</div>
+              <div style="color:var(--texto-suave); font-size:10px;">
+                ${escapeHTML(nome)}${acc.wabaId ? ` · WABA ${escapeHTML(acc.wabaId)}` : ''}${acc.isCoexistence ? ' · Coexistência' : ''}
+              </div>
+            </div>
+            <div class="wa-account-actions">
+              ${badgeAtivo}
+              ${badgeCoex}
+              ${btnRemover}
+            </div>
+          </div>
+        `;
+    }).join('');
+
+  ['listaContasWhatsappChatbot', 'listaContasWhatsappConfig'].forEach(containerId => {
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML = htmlContas;
+  });
+}
+
+function initFacebookSdk(appId, apiVersion = 'v24.0') {
+  const effectiveAppId = String(appId || '').trim();
+  if (!effectiveAppId) {
+    return Promise.reject(new Error('Meta App ID não configurado.'));
+  }
+
+  if (window.FB && fbSdkLoadedAppId === effectiveAppId) {
+    return Promise.resolve(window.FB);
+  }
+
+  if (window.FB) {
+    window.FB.init({
+      appId: effectiveAppId,
+      cookie: true,
+      xfbml: true,
+      version: apiVersion || 'v24.0'
+    });
+    fbSdkLoadedAppId = effectiveAppId;
+    return Promise.resolve(window.FB);
+  }
+
+  if (fbSdkPromise && fbSdkLoadedAppId === effectiveAppId) {
+    return fbSdkPromise;
+  }
+
+  fbSdkLoadedAppId = effectiveAppId;
+  fbSdkPromise = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      fbSdkPromise = null;
+      reject(new Error('Tempo esgotado ao carregar o Facebook SDK (connect.facebook.net). Verifique sua conexão ou bloqueador de anúncios.'));
+    }, 12000);
+
+    window.fbAsyncInit = function () {
+      clearTimeout(timeout);
+      if (!window.FB) {
+        fbSdkPromise = null;
+        return reject(new Error('Facebook SDK carregou mas window.FB não está disponível.'));
+      }
+      window.FB.init({
+        appId: effectiveAppId,
+        cookie: true,
+        xfbml: true,
+        version: apiVersion || 'v24.0'
+      });
+      resolve(window.FB);
+    };
+
+    const existing = document.getElementById('facebook-jssdk');
+    if (existing) existing.remove();
+
+    const js = document.createElement('script');
+    js.id = 'facebook-jssdk';
+    js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
+    js.async = true;
+    js.defer = true;
+    js.crossOrigin = 'anonymous';
+    js.onerror = () => {
+      clearTimeout(timeout);
+      fbSdkPromise = null;
+      reject(new Error('Falha ao baixar o Facebook JavaScript SDK (connect.facebook.net).'));
+    };
+    document.body.appendChild(js);
+  });
+
+  return fbSdkPromise;
+}
+
+function getFacebookUserProfile() {
+  return new Promise(resolve => {
+    if (!window.FB) return resolve(null);
+    try {
+      window.FB.api('/me', { fields: 'id,name,email,picture.width(120).height(120)' }, res => {
+        if (!res || res.error) return resolve(null);
+        resolve({
+          id: res.id || '',
+          name: res.name || 'Usuário Meta',
+          email: res.email || '',
+          pictureUrl: res.picture?.data?.url || ''
+        });
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+function normalizeEmbeddedSignupPayload(payload) {
+  const raw = payload?.data && typeof payload.data === 'object' ? payload.data : (payload || {});
+  const evt = typeof payload?.event === 'string'
+    ? payload.event
+    : (typeof raw.event === 'string' ? raw.event : undefined);
+  const messagingAccountIds = Array.isArray(raw.messaging_account_ids) ? raw.messaging_account_ids.map(String) : undefined;
+  const resolvedWabaId = (typeof raw.waba_id === 'string' && raw.waba_id) || messagingAccountIds?.[0] || undefined;
+  const isOnBizApp = typeof raw.is_on_biz_app === 'boolean' ? raw.is_on_biz_app : undefined;
+
+  return {
+    event: evt,
+    phone_number_id: typeof raw.phone_number_id === 'string' ? raw.phone_number_id : undefined,
+    waba_id: resolvedWabaId,
+    business_id: typeof raw.business_id === 'string' ? raw.business_id : undefined,
+    is_on_biz_app: isOnBizApp,
+    is_coexistence: evt === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' || isOnBizApp === true,
+    current_step: typeof raw.current_step === 'string' ? raw.current_step : undefined,
+    error_message: typeof raw.error_message === 'string' ? raw.error_message : undefined
+  };
+}
+
+function launchWhatsAppEmbeddedSignup({ configId, coexistence = true }) {
+  return new Promise(resolve => {
+    if (!window.FB) {
+      return resolve({ status: 'error', error: 'Facebook SDK não inicializado.' });
+    }
+
+    let captured = null;
+    let finishWaitResolver = null;
+
+    const isTerminal = d => Boolean(d?.event && (d.event.startsWith('FINISH') || d.event === 'CANCEL' || d.event === 'ERROR'));
+
+    const messageListener = event => {
+      if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
+      try {
+        const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (payload && payload.type === 'WA_EMBEDDED_SIGNUP') {
+          const norm = normalizeEmbeddedSignupPayload(payload);
+          const clean = Object.fromEntries(Object.entries(norm).filter(([, v]) => v !== undefined));
+          captured = { ...(captured || {}), ...clean };
+          if (captured.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' || captured.is_on_biz_app === true) {
+            captured.is_coexistence = true;
+          }
+          if (isTerminal(captured) && finishWaitResolver) {
+            finishWaitResolver();
+            finishWaitResolver = null;
+          }
+        }
+      } catch { }
+    };
+
+    window.addEventListener('message', messageListener);
+
+    const extras = {
+      setup: {},
+      version: 'v4',
+      sessionInfoVersion: '3'
+    };
+    if (coexistence !== false) {
+      extras.featureType = 'whatsapp_business_app_onboarding';
+    }
+
+    const loginOptions = {
+      response_type: 'code',
+      override_default_response_type: true,
+      extras
+    };
+    if (configId && String(configId).trim()) {
+      loginOptions.config_id = String(configId).trim();
+    } else {
+      loginOptions.scope = 'whatsapp_business_management,whatsapp_business_messaging';
+    }
+
+    try {
+      window.FB.login(response => {
+        let done = false;
+        let timer = null;
+
+        const finalize = result => {
+          if (done) return;
+          done = true;
+          if (timer) clearTimeout(timer);
+          finishWaitResolver = null;
+          window.removeEventListener('message', messageListener);
+          resolve(result);
+        };
+
+        const evaluate = (authResponse, rawStatus) => {
+          const evt = captured?.event;
+          if (evt === 'CANCEL') {
+            return finalize({
+              status: 'unknown',
+              error: captured?.current_step
+                ? `Onboarding cancelado na etapa "${captured.current_step}".`
+                : 'Onboarding cancelado pelo usuário.',
+              embeddedData: captured
+            });
+          }
+          if (evt === 'ERROR' || captured?.error_message) {
+            return finalize({
+              status: 'error',
+              error: captured?.error_message || 'Erro durante o Embedded Signup na Meta.',
+              embeddedData: captured
+            });
+          }
+          if (authResponse && ((evt && evt.startsWith('FINISH')) || captured?.waba_id || captured?.phone_number_id)) {
+            return finalize({ status: 'connected', authResponse, embeddedData: captured });
+          }
+          if (authResponse) {
+            return finalize({
+              status: 'unknown',
+              error: 'Nenhum número ou conta WhatsApp Business foi confirmado no pop-up da Meta.',
+              embeddedData: captured
+            });
+          }
+          return finalize({
+            status: rawStatus || 'unknown',
+            error: 'Login com Facebook não concluído.',
+            embeddedData: captured
+          });
+        };
+
+        if (response?.authResponse) {
+          if (isTerminal(captured)) {
+            evaluate(response.authResponse, response.status);
+          } else {
+            finishWaitResolver = () => evaluate(response.authResponse, response.status);
+            timer = setTimeout(() => evaluate(response.authResponse, response.status), 1500);
+          }
+        } else {
+          evaluate(undefined, response?.status);
+        }
+      }, loginOptions);
+    } catch (err) {
+      window.removeEventListener('message', messageListener);
+      resolve({ status: 'error', error: err.message || String(err), embeddedData: captured });
+    }
+  });
+}
+
+async function conectarWhatsappComFacebook() {
+  const creds = getCredenciaisHubAtuaisUI();
+  if (!metaAuthState.hubEnabled && !creds.hasLoginJwt && !creds.hasApiKey) {
+    mostrarFeedbackMetaFacebook('❌ Informe o Token de Login (JWT) ou a API Key do projeto no Automatas Hub para liberar o login.', 'error');
+    return;
+  }
+  const isConfigTab = document.getElementById('tab-config')?.classList.contains('active');
+  const hasSetupVal = Boolean(
+    document.getElementById('setupHubLoginJwt')?.value.trim() ||
+    document.getElementById('setupHubApiKey')?.value.trim()
+  );
+  const hasCfgVal = Boolean(
+    document.getElementById('cfgAutomatasLoginJwt')?.value.trim() ||
+    document.getElementById('cfgAutomatasApiKey')?.value.trim()
+  );
+  const origem = isConfigTab && hasCfgVal ? 'config' : (hasSetupVal ? 'setup' : 'config');
+  return abrirConectarAutomatasHub(origem);
+}
+
+async function selecionarContaWhatsapp(phoneNumberId) {
+  try {
+    const res = await fetch('/api/meta/auth/selecionar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumberId })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.sucesso) {
+      mostrarErro(data.erro || 'Não foi possível selecionar o número.');
+      return;
+    }
+    metaAuthState.activePhoneNumberId = data.activePhoneNumberId || phoneNumberId;
+    metaAuthState.accounts = data.accounts || metaAuthState.accounts;
+    renderizarContasWhatsappMeta();
+    avisar(`📱 Número ativo alterado para ID ${metaAuthState.activePhoneNumberId}`);
+  } catch (e) {
+    mostrarErro('Erro ao alternar número WhatsApp: ' + e.message);
+  }
+}
+
+async function sincronizarCoexistenciaWhatsapp(phoneNumberId) {
+  mostrarFeedbackMetaFacebook('⏳ Solicitando sincronização de contatos e histórico (Coexistência)...', 'info');
+  try {
+    const res = await fetch('/api/meta/auth/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumberId })
+    });
+    const data = await res.json();
+    if (data.accounts) {
+      metaAuthState.accounts = data.accounts;
+      renderizarContasWhatsappMeta();
+    }
+    if (data.sucesso) {
+      mostrarFeedbackMetaFacebook('✅ Sincronização de Coexistência solicitada ao Hub com sucesso!', 'success');
+    } else {
+      const warns = (data.warnings || [data.erro || 'Falha na sincronização']).join(' | ');
+      mostrarFeedbackMetaFacebook(`⚠️ ${escapeHTML(warns)}`, 'error');
+    }
+  } catch (e) {
+    mostrarFeedbackMetaFacebook(`❌ Erro na sincronização: ${escapeHTML(e.message)}`, 'error');
+  }
+}
+
+async function desconectarContaWhatsapp(phoneNumberId) {
+  if (!confirm('Remover este número da lista de contas vinculadas?')) return;
+  try {
+    const res = await fetch(`/api/meta/auth/${encodeURIComponent(phoneNumberId)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.sucesso) {
+      metaAuthState.connected = Boolean(data.connected && Array.isArray(data.accounts) && data.accounts.length > 0);
+      metaAuthState.activePhoneNumberId = data.activePhoneNumberId || '';
+      metaAuthState.accounts = data.accounts || [];
+      renderizarContasWhatsappMeta();
+      avisar('Vínculo do número removido.');
+    }
+  } catch (e) {
+    mostrarErro('Erro ao remover número: ' + e.message);
+  }
+}
+
+/* ---------------------------------------------------------------
+   LISTA DE CONTATOS PERMITIDOS (MODO TESTE DO CHATBOT)
+--------------------------------------------------------------- */
+async function carregarContatosTesteChatbot() {
+  try {
+    const res = await fetch('/api/chatbot/contatos-teste');
+    const data = await res.json();
+    if (!data.sucesso) return;
+    contatosTesteState = {
+      modoSomenteTestes: Boolean(data.modoSomenteTestes),
+      contatos: Array.isArray(data.contatos) ? data.contatos : []
+    };
+    renderizarContatosTesteChatbot();
+  } catch (e) {
+    console.warn('Erro ao carregar contatos de teste:', e);
+  }
+}
+
+function renderizarContatosTesteChatbot() {
+  const ativo = Boolean(contatosTesteState.modoSomenteTestes);
+  const contatos = contatosTesteState.contatos || [];
+
+  document.querySelectorAll('[data-whitelist-chk]').forEach(chk => {
+    chk.checked = ativo;
+  });
+
+  document.querySelectorAll('[data-whitelist-badge]').forEach(badge => {
+    if (ativo) {
+      badge.className = 'badge badge-pendente';
+      badge.textContent = `🧪 Modo Teste Ativo (${contatos.length} contato${contatos.length === 1 ? '' : 's'})`;
+    } else {
+      badge.className = 'badge badge-aprovado';
+      badge.textContent = '🌐 Modo Aberto (todos)';
+    }
+  });
+
+  const html = contatos.length === 0
+    ? (ativo
+      ? '<span style="font-size:11px; color:#B91C1C;">⚠️ Modo Teste ativo com lista vazia: todas as mensagens recebidas pelo WhatsApp serão ignoradas até adicionar um número acima.</span>'
+      : '<span style="font-size:11px; color:var(--texto-suave);">Nenhum contato de teste adicionado ainda.</span>')
+    : contatos.map(c => `
+        <div class="whitelist-chip">
+          <span>🧪 <b>${escapeHTML(c.nome || 'Teste')}</b> · ${escapeHTML(c.telefone)}</span>
+          <button type="button" onclick="removerContatoTesteChatbot('${escapeAttr(c.id)}')" title="Remover contato de teste">✕</button>
+        </div>
+      `).join('');
+
+  document.querySelectorAll('[data-whitelist-list]').forEach(listaEl => {
+    listaEl.innerHTML = html;
+  });
+}
+
+async function adicionarContatoTesteChatbot(origem = 'chatbot') {
+  const suffix = origem === 'setup' ? 'Setup' : (origem === 'config' ? 'Config' : '');
+  const inpNome = document.getElementById(`inpContatoTesteNome${suffix}`);
+  const inpTel = document.getElementById(`inpContatoTesteTelefone${suffix}`);
+  const nome = inpNome?.value.trim() || '';
+  const telefone = inpTel?.value.trim() || '';
+
+  if (!telefone) {
+    mostrarErro('Informe o número de telefone com DDD (ex: 79999998888).');
+    inpTel?.focus();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/chatbot/contatos-teste', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, telefone })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.sucesso) {
+      mostrarErro(data.erro || 'Não foi possível adicionar contato de teste.');
+      return;
+    }
+    contatosTesteState = {
+      modoSomenteTestes: Boolean(data.modoSomenteTestes),
+      contatos: data.contatos || []
+    };
+    if (inpNome) inpNome.value = '';
+    if (inpTel) inpTel.value = '';
+    renderizarContatosTesteChatbot();
+    avisar('🧪 Contato adicionado e Modo Teste ativado! Apenas contatos desta lista serão respondidos.');
+  } catch (e) {
+    mostrarErro('Erro ao adicionar contato de teste: ' + e.message);
+  }
+}
+
+async function removerContatoTesteChatbot(id) {
+  try {
+    const res = await fetch(`/api/chatbot/contatos-teste/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.sucesso) {
+      contatosTesteState = {
+        modoSomenteTestes: Boolean(data.modoSomenteTestes),
+        contatos: data.contatos || []
+      };
+      renderizarContatosTesteChatbot();
+      avisar('Contato removido da lista de testes.');
+    }
+  } catch (e) {
+    mostrarErro('Erro ao remover contato: ' + e.message);
+  }
+}
+
+async function alternarModoTesteChatbot(ativo) {
+  try {
+    const res = await fetch('/api/chatbot/contatos-teste/modo', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: Boolean(ativo) })
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      contatosTesteState = {
+        modoSomenteTestes: Boolean(data.modoSomenteTestes),
+        contatos: data.contatos || []
+      };
+      renderizarContatosTesteChatbot();
+      avisar(data.modoSomenteTestes
+        ? '🧪 Filtro de teste ATIVADO: apenas os contatos listados serão respondidos.'
+        : '🌐 Filtro de teste DESATIVADO: todos os contatos serão respondidos.');
+    }
+  } catch (e) {
+    mostrarErro('Erro ao alterar modo de teste: ' + e.message);
   }
 }
 
@@ -4062,6 +5584,22 @@ function prepararDadosPropostaPDF() {
 
   setEl('pdfPrazoFab', prazo);
 
+  // Modelagem 3D no PDF
+  const linha3D = document.getElementById('pdfLinhaModelagem3D');
+  if (linha3D) {
+    const possui3D = (document.getElementById('possuiModelagem3D')?.value || 'nao') === 'sim';
+    const incluir3D = !possui3D && Boolean(document.getElementById('incluirModelagem3D')?.checked);
+    if (possui3D) {
+      linha3D.style.display = 'block';
+      setEl('pdfModelagem3D', 'Fornecida pelo cliente');
+    } else if (incluir3D) {
+      linha3D.style.display = 'block';
+      setEl('pdfModelagem3D', 'Inclusa no orçamento (Engenharia CAD/CAM)');
+    } else {
+      linha3D.style.display = 'none';
+    }
+  }
+
   // Observações técnicas
   const boxObs = document.getElementById('pdfBoxObsTecnicas');
   if (boxObs) {
@@ -4183,6 +5721,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderMaquinasCatalogo();
     renderConfig();
 
+    const elMetaUrl = document.getElementById('displayWebhookMetaUrl');
+    if (elMetaUrl) elMetaUrl.textContent = `${window.location.origin}/api/webhook/meta`;
     const elChatbotUrl = document.getElementById('displayWebhookChatbotUrl');
     if (elChatbotUrl) elChatbotUrl.textContent = `${window.location.origin}/api/inbound/chatbot`;
     const elSiteUrl = document.getElementById('displayWebhookSiteUrl');
@@ -4191,10 +5731,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await verificarSessaoUsuario();
     await checarStatusDatabase();
     await carregarListaUsuarios();
+    await carregarLicoesAprendidasConfig();
 
     await carregarClientes();
     await carregarSalvos();
     await carregarConversas();
+    await carregarEstadoMetaAuth();
+    await carregarContatosTesteChatbot();
 
     carregarOrcamentoNoFormulario(novoOrcamentoObjPadrao());
     initDropzoneEClipboard();
