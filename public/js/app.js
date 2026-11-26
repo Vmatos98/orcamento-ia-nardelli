@@ -5180,11 +5180,28 @@ async function alternarModoTesteChatbot(ativo) {
 
 async function testarChaveOpenRouter() {
   const chave = document.getElementById('cfgOpenrouterKey').value.trim();
+  const statusBox = document.getElementById('openrouterTesteStatus');
+  const setBox = (texto, tipo) => {
+    if (!statusBox) return;
+    const paleta = {
+      success: { bg: '#DCFCE7', fg: '#166534', bd: '#86EFAC' },
+      error: { bg: '#FEF2F2', fg: '#B91C1C', bd: '#FECACA' },
+      info: { bg: '#EFF6FF', fg: '#1E40AF', bd: '#BFDBFE' }
+    }[tipo] || { bg: '#EFF6FF', fg: '#1E40AF', bd: '#BFDBFE' };
+    statusBox.style.display = 'block';
+    statusBox.style.background = paleta.bg;
+    statusBox.style.color = paleta.fg;
+    statusBox.style.border = `1px solid ${paleta.bd}`;
+    statusBox.innerHTML = texto;
+  };
+
   if (!chave) {
+    setBox('❌ Informe a chave OpenRouter antes de testar.', 'error');
     mostrarErro('Informe a chave OpenRouter antes de testar.');
     return;
   }
 
+  setBox('⏳ Testando conexão com OpenRouter...', 'info');
   avisar('Testando conexão com OpenRouter...');
   try {
     const res = await fetch('/api/config/testar-openrouter', {
@@ -5194,11 +5211,35 @@ async function testarChaveOpenRouter() {
     });
     const data = await res.json();
     if (data.sucesso) {
-      avisar('✅ Chave OpenRouter válida! Modelos de IA prontos.');
+      // Salva automaticamente a chave validada para não exigir clique extra no final da página
+      let salvaNoBanco = false;
+      try {
+        const saveRes = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ openrouterApiKey: chave })
+        });
+        const saveData = await saveRes.json();
+        if (saveRes.ok && saveData.sucesso && saveData.config) {
+          config = saveData.config;
+          salvaNoBanco = true;
+        }
+      } catch {}
+
+      const label = data.info?.label ? ` (${escapeHTML(data.info.label)})` : '';
+      const remaining = data.info?.limit_remaining !== undefined && data.info?.limit_remaining !== null
+        ? ` · Saldo restante: <b>$${escapeHTML(String(data.info.limit_remaining))}</b>`
+        : '';
+      const msgSalva = salvaNoBanco ? ' e salva!' : ' (clique em Salvar configurações abaixo para gravar).';
+      setBox(`✅ <b>Chave OpenRouter válida${msgSalva}</b>${label}${remaining}`, 'success');
+      avisar(salvaNoBanco ? '✅ Chave OpenRouter válida e salva!' : '✅ Chave OpenRouter válida!');
     } else {
+      const errMsg = escapeHTML(data.erro || 'Verifique sua chave.');
+      setBox(`❌ Chave recusada: ${errMsg}`, 'error');
       mostrarErro('Chave recusada: ' + (data.erro || 'Verifique sua chave.'));
     }
   } catch (e) {
+    setBox(`❌ Falha ao conectar com OpenRouter: ${escapeHTML(e.message)}`, 'error');
     mostrarErro('Falha ao conectar com OpenRouter: ' + e.message);
   }
 }
