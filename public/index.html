@@ -1678,64 +1678,6 @@
 
       <!-- Integração WhatsApp (Automatas Hub) & Chatbot IA (JEV) -->
       <div class="card">
-        <div
-          style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-          <h2 style="margin:0;"><span class="dot"></span>WhatsApp (Automatas Hub) &amp; Chatbot IA (JEV)</h2>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <button type="button" id="btnConectarFacebookConfig" class="btn btn-facebook"
-              style="padding:6px 12px; font-size:11px;" onclick="conectarWhatsappComFacebook()" disabled>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path
-                  d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-              Conectar WhatsApp com Facebook
-            </button>
-            <button type="button" class="btn btn-ghost" style="padding:5px 12px; font-size:11px; font-weight:700;"
-              onclick="testarConexaoMetaAPI()">🔌 Testar Conexão Hub</button>
-          </div>
-        </div>
-        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
-          A comunicação com a Meta é feita inteiramente pelo <b>Automatas Hub</b>. Informe o <b>Token de Login (JWT)</b>
-          para liberar o Embedded Signup do Facebook, a <b>API Key</b> para enviar/receber mensagens do WhatsApp e o
-          <b>Webhook</b> deste sistema para receber eventos.
-        </p>
-        <div class="grid grid-2">
-          <label class="field"><span>Token de Login / Embedded (JWT — libera login)</span>
-            <input id="cfgAutomatasLoginJwt" type="password" placeholder="eyJhbGciOi..."
-              oninput="atualizarEstadoBotaoLoginHubUI()">
-          </label>
-          <label class="field"><span>Modelo de Geração Principal (Anthropic: Claude Sonnet 5.5)</span>
-            <input id="cfgModeloGerador" value="anthropic/claude-sonnet-5.5">
-          </label>
-          <label class="field"><span>Modelo Roteador JEV (Triagem Rápida)</span>
-            <input id="cfgModeloRoteador" value="google/gemini-2.5-flash">
-          </label>
-          <label class="field"><span>Modelo de Contingência / Fallback (Qwen 3.8 Pro)</span>
-            <input id="cfgModeloEconomico" value="qwen/qwen3.8-max-prime">
-          </label>
-          <label class="field" style="grid-column:span 2;"><span>Modelo Econômico de Aprendizado (Analisa V1 da IA vs.
-              Último Aprovado)</span>
-            <input id="cfgModeloAnaliseAprendizado" value="google/gemini-2.5-flash"
-              placeholder="google/gemini-2.5-flash">
-          </label>
-        </div>
-        <div id="openrouterTesteStatus"
-          style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
-        <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
-          O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Quando um orçamento é aprovado, o modelo
-          econômico compara a 1ª versão com a versão final aprovada e gera um resumo de lições para evitar repetir erros
-          no futuro.
-        </p>
-        <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--linha);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <b style="font-size:12px; color:var(--azul);">🧠 Últimas Lições Aprendidas pelo Modelo Econômico</b>
-            <button type="button" class="btn btn-ghost" style="padding:3px 9px; font-size:10px;"
-              onclick="carregarLicoesAprendidasConfig()">↻ Atualizar</button>
-          </div>
-        </div>
-
-        <!-- Integração WhatsApp (Automatas Hub) & Chatbot IA (JEV) -->
-        <div class="card">
           <div
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
             <h2 style="margin:0;"><span class="dot"></span>WhatsApp (Automatas Hub) &amp; Chatbot IA (JEV)</h2>
