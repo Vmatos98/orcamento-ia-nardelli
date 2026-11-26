@@ -1704,131 +1704,194 @@
             <input id="cfgAutomatasLoginJwt" type="password" placeholder="eyJhbGciOi..."
               oninput="atualizarEstadoBotaoLoginHubUI()">
           </label>
-          <label class="field"><span>API Key do Projeto (aut_live_... — acesso à API WhatsApp)</span>
-            <input id="cfgAutomatasApiKey" type="password" placeholder="aut_live_..."
-              oninput="atualizarEstadoBotaoLoginHubUI()">
+          <label class="field"><span>Modelo de Geração Principal (Anthropic: Claude Sonnet 5.5)</span>
+            <input id="cfgModeloGerador" value="anthropic/claude-sonnet-5.5">
           </label>
-          <label class="field" style="grid-column:1 / -1;"><span>Webhook URL deste sistema (WhatsApp Recebimento)</span>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <input id="cfgAutomatasWebhookUrl" placeholder="https://orcamento.nardelliusinagem.com/api/webhook/meta"
-                style="flex:1;">
-              <button type="button" class="btn btn-ghost" style="padding:5px 9px; font-size:11px; white-space:nowrap;"
-                onclick="copiarWebhookMetaUrl('config')">📋 Copiar</button>
-            </div>
+          <label class="field"><span>Modelo Roteador JEV (Triagem Rápida)</span>
+            <input id="cfgModeloRoteador" value="google/gemini-2.5-flash">
           </label>
-          <label class="field"><span>Chave API Groq (Transcrição Áudio/Vídeo Whisper)</span>
-            <input id="cfgGroqApiKey" type="password" placeholder="gsk_...">
+          <label class="field"><span>Modelo de Contingência / Fallback (Qwen 3.8 Pro)</span>
+            <input id="cfgModeloEconomico" value="qwen/qwen3.8-max-prime">
           </label>
-          <label class="field"><span>Tempo de Debounce de Mensagens (ms)</span>
-            <input id="cfgChatbotDebounceMs" type="number" step="500" value="6000" placeholder="6000">
+          <label class="field" style="grid-column:span 2;"><span>Modelo Econômico de Aprendizado (Analisa V1 da IA vs.
+              Último Aprovado)</span>
+            <input id="cfgModeloAnaliseAprendizado" value="google/gemini-2.5-flash"
+              placeholder="google/gemini-2.5-flash">
           </label>
         </div>
-        <details style="margin-top:8px;">
-          <summary style="cursor:pointer; font-size:11px; color:var(--texto-suave); font-weight:600;">⚙️ Endpoints do
-            Hub Automatas (opcional)</summary>
-          <div class="grid grid-2" style="margin-top:8px;">
-            <label class="field"><span>Automatas Hub API URL</span>
-              <input id="cfgAutomatasHubUrl" value="https://api.automatas.tech"
-                placeholder="https://api.automatas.tech">
+        <div id="openrouterTesteStatus"
+          style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
+        <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
+          O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Quando um orçamento é aprovado, o modelo
+          econômico compara a 1ª versão com a versão final aprovada e gera um resumo de lições para evitar repetir erros
+          no futuro.
+        </p>
+        <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--linha);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <b style="font-size:12px; color:var(--azul);">🧠 Últimas Lições Aprendidas pelo Modelo Econômico</b>
+            <button type="button" class="btn btn-ghost" style="padding:3px 9px; font-size:10px;"
+              onclick="carregarLicoesAprendidasConfig()">↻ Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Integração WhatsApp (Automatas Hub) & Chatbot IA (JEV) -->
+        <div class="card">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <h2 style="margin:0;"><span class="dot"></span>WhatsApp (Automatas Hub) &amp; Chatbot IA (JEV)</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <button type="button" id="btnConectarFacebookConfig" class="btn btn-facebook"
+                style="padding:6px 12px; font-size:11px;" onclick="conectarWhatsappComFacebook()" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path
+                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+                Conectar WhatsApp com Facebook
+              </button>
+              <button type="button" class="btn btn-ghost" style="padding:5px 12px; font-size:11px; font-weight:700;"
+                onclick="testarConexaoMetaAPI()">🔌 Testar Conexão Hub</button>
+            </div>
+          </div>
+          <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
+            A comunicação com a Meta é feita inteiramente pelo <b>Automatas Hub</b>. Informe o <b>Token de Login
+              (JWT)</b>
+            para liberar o Embedded Signup do Facebook, a <b>API Key</b> para enviar/receber mensagens do WhatsApp e o
+            <b>Webhook</b> deste sistema para receber eventos.
+          </p>
+          <div class="grid grid-2">
+            <label class="field"><span>Token de Login / Embedded (JWT — libera login)</span>
+              <input id="cfgAutomatasLoginJwt" type="password" placeholder="eyJhbGciOi..."
+                oninput="atualizarEstadoBotaoLoginHubUI()">
             </label>
-            <label class="field"><span>Automatas Site URL (Portal /conectar)</span>
-              <input id="cfgAutomatasSiteUrl" value="https://automatas.tech" placeholder="https://automatas.tech">
+            <label class="field"><span>API Key do Projeto (aut_live_... — acesso à API WhatsApp)</span>
+              <input id="cfgAutomatasApiKey" type="password" placeholder="aut_live_..."
+                oninput="atualizarEstadoBotaoLoginHubUI()">
+            </label>
+            <label class="field" style="grid-column:1 / -1;"><span>Webhook URL deste sistema (WhatsApp
+                Recebimento)</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input id="cfgAutomatasWebhookUrl" placeholder="https://orcamento.nardelliusinagem.com/api/webhook/meta"
+                  style="flex:1;">
+                <button type="button" class="btn btn-ghost" style="padding:5px 9px; font-size:11px; white-space:nowrap;"
+                  onclick="copiarWebhookMetaUrl('config')">📋 Copiar</button>
+              </div>
+            </label>
+            <label class="field"><span>Chave API Groq (Transcrição Áudio/Vídeo Whisper)</span>
+              <input id="cfgGroqApiKey" type="password" placeholder="gsk_...">
+            </label>
+            <label class="field"><span>Tempo de Debounce de Mensagens (ms)</span>
+              <input id="cfgChatbotDebounceMs" type="number" step="500" value="6000" placeholder="6000">
             </label>
           </div>
-        </details>
-        <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <span id="cfgHubLoginStatusBadge" class="badge"
-            style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; font-size:10px;">🔒 Informe o Token JWT
-            ou API Key</span>
-          <button type="button" class="btn btn-ghost" style="padding:5px 11px; font-size:11px;"
-            onclick="salvarESincronizarHub('config')">🔗 Salvar &amp; Sincronizar Automatas Hub</button>
-          <button type="button" id="btnConectarAutomatasConfig" class="btn btn-facebook"
-            style="padding:5px 11px; font-size:11px;" onclick="abrirConectarAutomatasHub('config')" disabled>📘 Conectar
-            via Portal Automatas Hub</button>
-        </div>
-        <div id="metaTesteStatus"
-          style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
-        <div id="listaContasWhatsappConfig" class="wa-accounts-list" style="margin-top:12px;"></div>
-
-        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--linha);">
-          <div
-            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-            <b style="font-size:12px; color:var(--azul-esc);">🧪 Contatos Permitidos para Teste (Whitelist do
-              WhatsApp)</b>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span data-whitelist-badge class="badge badge-manual">🌐 Modo Aberto</span>
-              <label
-                style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; cursor:pointer; color:var(--azul-esc);">
-                <input type="checkbox" data-whitelist-chk onchange="alternarModoTesteChatbot(this.checked)">
-                Responder somente esta lista
+          <details style="margin-top:8px;">
+            <summary style="cursor:pointer; font-size:11px; color:var(--texto-suave); font-weight:600;">⚙️ Endpoints do
+              Hub Automatas (opcional)</summary>
+            <div class="grid grid-2" style="margin-top:8px;">
+              <label class="field"><span>Automatas Hub API URL</span>
+                <input id="cfgAutomatasHubUrl" value="https://api.automatas.tech"
+                  placeholder="https://api.automatas.tech">
+              </label>
+              <label class="field"><span>Automatas Site URL (Portal /conectar)</span>
+                <input id="cfgAutomatasSiteUrl" value="https://automatas.tech" placeholder="https://automatas.tech">
               </label>
             </div>
+          </details>
+          <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span id="cfgHubLoginStatusBadge" class="badge"
+              style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; font-size:10px;">🔒 Informe o Token
+              JWT
+              ou API Key</span>
+            <button type="button" class="btn btn-ghost" style="padding:5px 11px; font-size:11px;"
+              onclick="salvarESincronizarHub('config')">🔗 Salvar &amp; Sincronizar Automatas Hub</button>
+            <button type="button" id="btnConectarAutomatasConfig" class="btn btn-facebook"
+              style="padding:5px 11px; font-size:11px;" onclick="abrirConectarAutomatasHub('config')" disabled>📘
+              Conectar
+              via Portal Automatas Hub</button>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <input id="inpContatoTesteNomeConfig" placeholder="Nome / identificação"
-              style="flex:1 1 180px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;">
-            <input id="inpContatoTesteTelefoneConfig" placeholder="Telefone com DDD (ex: 79999998888)"
-              style="flex:1 1 200px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;"
-              onkeydown="if(event.key==='Enter') adicionarContatoTesteChatbot('config')">
-            <button type="button" class="btn btn-primary" style="padding:7px 14px; font-size:12px;"
-              onclick="adicionarContatoTesteChatbot('config')">+ Adicionar Contato de Teste</button>
-          </div>
-          <div data-whitelist-list class="wa-accounts-list" style="margin-top:10px;"></div>
-        </div>
-      </div>
+          <div id="metaTesteStatus"
+            style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
+          <div id="listaContasWhatsappConfig" class="wa-accounts-list" style="margin-top:12px;"></div>
 
-      <!-- Banco de Dados PostgreSQL & Persistência -->
-      <div class="card">
-        <div
-          style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-          <h2 style="margin:0;"><span class="dot"></span>Banco de Dados PostgreSQL & Persistência</h2>
-          <span id="dbStatusBadge" class="db-status-badge pg-off">○ Modo Local (JSON com Fallback)</span>
-        </div>
-        <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
-          O histórico de orçamentos, conversas do chatbot e cadastro de usuários podem ser sincronizados diretamente em
-          uma base PostgreSQL.
-        </p>
-        <div class="grid grid-2">
-          <label class="field" style="grid-column:span 2;"><span>String de Conexão (DATABASE_URL)</span>
-            <div style="display:flex; gap:8px;">
-              <input id="cfgPostgresUrl" placeholder="postgresql://usuario:senha@localhost:5432/nardelli"
-                value="postgresql://postgres@localhost:5432/nardelli">
-              <button type="button" class="btn btn-primary" onclick="conectarPostgresPelaTela()">Conectar &
-                Testar</button>
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--linha);">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+              <b style="font-size:12px; color:var(--azul-esc);">🧪 Contatos Permitidos para Teste (Whitelist do
+                WhatsApp)</b>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span data-whitelist-badge class="badge badge-manual">🌐 Modo Aberto</span>
+                <label
+                  style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; cursor:pointer; color:var(--azul-esc);">
+                  <input type="checkbox" data-whitelist-chk onchange="alternarModoTesteChatbot(this.checked)">
+                  Responder somente esta lista
+                </label>
+              </div>
             </div>
-          </label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input id="inpContatoTesteNomeConfig" placeholder="Nome / identificação"
+                style="flex:1 1 180px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;">
+              <input id="inpContatoTesteTelefoneConfig" placeholder="Telefone com DDD (ex: 79999998888)"
+                style="flex:1 1 200px; padding:7px 10px; border:1px solid var(--linha); border-radius:4px; font-size:12px;"
+                onkeydown="if(event.key==='Enter') adicionarContatoTesteChatbot('config')">
+              <button type="button" class="btn btn-primary" style="padding:7px 14px; font-size:12px;"
+                onclick="adicionarContatoTesteChatbot('config')">+ Adicionar Contato de Teste</button>
+            </div>
+            <div data-whitelist-list class="wa-accounts-list" style="margin-top:10px;"></div>
+          </div>
         </div>
-        <div id="pgMsgStatus" style="font-size:11px; margin-top:8px; color:var(--texto-suave);"></div>
-      </div>
 
-      <!-- Gestão de Usuários do Sistema -->
-      <div class="card">
-        <div
-          style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-          <h2 style="margin:0;"><span class="dot"></span>Usuários com Acesso ao Sistema</h2>
-          <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;"
-            onclick="abrirModalAuth('register')">+ Cadastrar Novo Usuário</button>
+        <!-- Banco de Dados PostgreSQL & Persistência -->
+        <div class="card">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <h2 style="margin:0;"><span class="dot"></span>Banco de Dados PostgreSQL & Persistência</h2>
+            <span id="dbStatusBadge" class="db-status-badge pg-off">○ Modo Local (JSON com Fallback)</span>
+          </div>
+          <p style="font-size:12px; color:var(--texto-suave); margin-bottom:12px;">
+            O histórico de orçamentos, conversas do chatbot e cadastro de usuários podem ser sincronizados diretamente
+            em
+            uma base PostgreSQL.
+          </p>
+          <div class="grid grid-2">
+            <label class="field" style="grid-column:span 2;"><span>String de Conexão (DATABASE_URL)</span>
+              <div style="display:flex; gap:8px;">
+                <input id="cfgPostgresUrl" placeholder="postgresql://usuario:senha@localhost:5432/nardelli"
+                  value="postgresql://postgres@localhost:5432/nardelli">
+                <button type="button" class="btn btn-primary" onclick="conectarPostgresPelaTela()">Conectar &
+                  Testar</button>
+              </div>
+            </label>
+          </div>
+          <div id="pgMsgStatus" style="font-size:11px; margin-top:8px; color:var(--texto-suave);"></div>
         </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Cargo</th>
-                <th>Data Cadastro</th>
-              </tr>
-            </thead>
-            <tbody id="lista-usuarios-body">
-              <tr>
-                <td colspan="4" style="text-align:center; color:var(--texto-suave);">Carregando usuários...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <button type="button" class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar configurações</button>
+        <!-- Gestão de Usuários do Sistema -->
+        <div class="card">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <h2 style="margin:0;"><span class="dot"></span>Usuários com Acesso ao Sistema</h2>
+            <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;"
+              onclick="abrirModalAuth('register')">+ Cadastrar Novo Usuário</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Cargo</th>
+                  <th>Data Cadastro</th>
+                </tr>
+              </thead>
+              <tbody id="lista-usuarios-body">
+                <tr>
+                  <td colspan="4" style="text-align:center; color:var(--texto-suave);">Carregando usuários...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar configurações</button>
     </section>
 
   </main>

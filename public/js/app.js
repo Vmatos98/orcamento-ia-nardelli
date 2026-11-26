@@ -5223,7 +5223,7 @@ async function testarChaveOpenRouter() {
           config = saveData.config;
           salvaNoBanco = true;
         }
-      } catch {}
+      } catch { }
 
       const label = data.info?.label ? ` (${escapeHTML(data.info.label)})` : '';
       const remaining = data.info?.limit_remaining !== undefined && data.info?.limit_remaining !== null
