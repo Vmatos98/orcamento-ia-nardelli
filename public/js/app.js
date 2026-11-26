@@ -4669,7 +4669,7 @@ window.addEventListener('message', async (event) => {
     let expectedOrigin = 'https://automatas.tech';
     try {
       expectedOrigin = new URL(expectedSiteUrl).origin;
-    } catch {}
+    } catch { }
     if (event.origin !== expectedOrigin) return;
     const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
     if (payload && payload.type === 'AUTOMATAS_HUB_CONNECTED') {
