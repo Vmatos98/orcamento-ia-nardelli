@@ -1660,6 +1660,7 @@
               placeholder="google/gemini-2.5-flash">
           </label>
         </div>
+        <div id="openrouterTesteStatus" style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
         <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
           O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Quando um orçamento é aprovado, o modelo
           econômico compara a 1ª versão com a versão final aprovada e gera um resumo de lições para evitar repetir erros
@@ -1671,28 +1672,7 @@
             <button type="button" class="btn btn-ghost" style="padding:3px 9px; font-size:10px;"
               onclick="carregarLicoesAprendidasConfig()">↻ Atualizar</button>
           </div>
-        </label>
-        <label class="field"><span>Modelo de Geração Principal (Anthropic: Claude Sonnet 5.5)</span>
-          <input id="cfgModeloGerador" value="anthropic/claude-sonnet-5.5">
-        </label>
-        <label class="field"><span>Modelo Roteador JEV (Triagem Rápida)</span>
-          <input id="cfgModeloRoteador" value="google/gemini-2.5-flash">
-        </label>
-        <label class="field"><span>Modelo de Contingência / Fallback (Qwen 3.8 Pro)</span>
-          <input id="cfgModeloEconomico" value="qwen/qwen3.8-max-prime">
-        </label>
-        <label class="field" style="grid-column:span 2;"><span>Modelo Econômico de Aprendizado (Analisa V1 da IA vs. Último Aprovado)</span>
-          <input id="cfgModeloAnaliseAprendizado" value="google/gemini-2.5-flash" placeholder="google/gemini-2.5-flash">
-        </label>
-      </div>
-      <div id="openrouterTesteStatus" style="display:none; margin-top:10px; padding:8px 12px; border-radius:4px; font-size:12px;"></div>
-      <p style="font-size:12px; color:var(--texto-suave); margin-top:8px;">
-        O sistema opera prioritariamente com Anthropic Claude Sonnet 5.5. Quando um orçamento é aprovado, o modelo econômico compara a 1ª versão com a versão final aprovada e gera um resumo de lições para evitar repetir erros no futuro.
-      </p>
-      <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--linha);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <b style="font-size:12px; color:var(--azul);">🧠 Últimas Lições Aprendidas pelo Modelo Econômico</b>
-          <button type="button" class="btn btn-ghost" style="padding:3px 9px; font-size:10px;" onclick="carregarLicoesAprendidasConfig()">↻ Atualizar</button>
+          <div id="painelLicoesAprendidasConfig" style="font-size:12px; color:var(--texto-suave);">Carregando lições aprendidas...</div>
         </div>
       </div>
 
@@ -2410,7 +2390,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/js/app.js?v=20261123a"></script>
+  <script src="/js/app.js?v=20261126a"></script>
 </body>
 
 </html>

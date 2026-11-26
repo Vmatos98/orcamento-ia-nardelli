@@ -5202,7 +5202,6 @@ async function testarChaveOpenRouter() {
   }
 
   setBox('⏳ Testando conexão com OpenRouter...', 'info');
-  avisar('Testando conexão com OpenRouter...');
   try {
     const res = await fetch('/api/config/testar-openrouter', {
       method: 'POST',
